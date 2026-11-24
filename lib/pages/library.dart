@@ -17,6 +17,9 @@ import 'settings.dart' show openPluginSettings;
 import 'remote.dart' show Notice, errorText;
 import 'links.dart';
 
+/// Height of the library header (tab row); page content starts below it.
+const _headerH = 122.0;
+
 class LibraryPage extends StatelessWidget {
   const LibraryPage({super.key, required this.tab});
   final String tab;
@@ -50,7 +53,7 @@ class LibraryPage extends StatelessWidget {
     return Stack(
       children: [
         Positioned.fill(
-          top: 140,
+          top: _headerH,
           child: AnimatedSwitcher(
             duration: const Duration(milliseconds: 280),
             switchInCurve: Curves.easeOutCubic,
@@ -110,15 +113,16 @@ class _LibraryHeader extends StatelessWidget {
     ];
     final selected = math.max(0, tabs.indexWhere((t) => t.$3 == active));
     // 整个音乐库为空（没加音乐来源、本地也没歌）：只留空状态，标签和 Coverflow 都不显示
-    if (lib == null) return const SizedBox(height: 140);
+    if (lib == null) return const SizedBox(height: _headerH);
     return SizedBox(
-      height: 140,
+      height: _headerH,
       child: Stack(
         children: [
-          // 音乐库是侧边栏的一级页面，不放返回按钮
+          // 音乐库是侧边栏的一级页面，不放返回按钮。
+          // Coverflow 是当前标签的另一个视图，入口放在标签行右端，与标签垂直居中（y = 86）。
           Positioned(
             right: 40,
-            top: 20,
+            top: 66,
             child: IconBtn(
               'coverflow',
               size: BtnSize.m,
@@ -128,7 +132,8 @@ class _LibraryHeader extends StatelessWidget {
           ),
           Positioned(
             left: 40,
-            top: 90,
+            // 紧贴 72 高的标题栏拖动区下方
+            top: 72,
             child: LineTabs(
               showLine: false,
               items: [for (final t in tabs) (t.$1, t.$2)],
@@ -136,7 +141,8 @@ class _LibraryHeader extends StatelessWidget {
               onChanged: (i) => app.replace('/library/${tabs[i].$3}'),
             ),
           ),
-          if (right != null) Positioned(right: 40, top: 95, child: right!),
+          // 排序控件在 Coverflow 按钮左边（按钮 40 宽 + 24 间距）
+          if (right != null) Positioned(right: 104, top: 77, child: right!),
         ],
       ),
     );
@@ -149,9 +155,12 @@ String _count(int n) =>
 /// 唱片架上的专辑：当前源的音乐库。
 List<Album> _shelf(AppState app) => app.library?.albums ?? const [];
 
-/// 空状态在内容区里的位置：定稿里标题在窗口 y≈360，内容区从 140 开始。
-Widget _emptyAt(Widget child) =>
-    Align(alignment: const Alignment(0, -0.3), child: child);
+/// 空状态在内容区里的位置：定稿里标题在窗口 y≈360，按内容区从 140 开始排版。
+/// 头部后来上移了，多出的顶部内边距让空状态留在原处。
+Widget _emptyAt(Widget child) => Padding(
+  padding: const EdgeInsets.only(top: 140 - _headerH),
+  child: Align(alignment: const Alignment(0, -0.3), child: child),
+);
 
 /// 整个音乐库为空：扫描中提示正在扫描，否则引导添加音乐文件夹或装插件。
 class _LibraryEmpty extends StatelessWidget {

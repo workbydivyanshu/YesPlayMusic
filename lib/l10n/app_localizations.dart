@@ -927,10 +927,10 @@ abstract class AppLocalizations {
   /// **'跟随系统'**
   String get langSystem;
 
-  /// No description provided for @settingsMiniLyric.
+  /// Settings toggle: on, the mini player always shows the current lyric; off, only while hovering its progress bar
   ///
   /// In zh, this message translates to:
-  /// **'在迷你播放器显示当前歌词'**
+  /// **'在迷你播放器中始终显示歌词'**
   String get settingsMiniLyric;
 
   /// No description provided for @settingsKeepRunning.

@@ -144,7 +144,7 @@
   "settingsAccentColor": "Акцентный цвет",
   "settingsLanguage": "Язык",
   "langSystem": "Как в системе",
-  "settingsMiniLyric": "Показывать текст песни в мини-плеере",
+  "settingsMiniLyric": "Всегда показывать текст песни в мини-плеере",
   "settingsKeepRunning": "Продолжать работу после закрытия окна",
   "trayShowWindow": "Показать окно",
   "trayQuit": "Выход",

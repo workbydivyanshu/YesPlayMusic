@@ -154,7 +154,10 @@
   "settingsAccentColor": "主题色",
   "settingsLanguage": "语言",
   "langSystem": "跟随系统",
-  "settingsMiniLyric": "在迷你播放器显示当前歌词",
+  "settingsMiniLyric": "在迷你播放器中始终显示歌词",
+  "@settingsMiniLyric": {
+    "description": "Settings toggle: on, the mini player always shows the current lyric; off, only while hovering its progress bar"
+  },
   "settingsKeepRunning": "关闭窗口后在后台继续运行",
   "trayShowWindow": "显示窗口",
   "trayQuit": "退出",

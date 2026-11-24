@@ -902,9 +902,10 @@ class _LyricSegState extends State<_LyricSeg> {
             onChanged: app.scrub,
             onCommit: app.seek,
             builder: (_, at, dragging) {
-              // 只有鼠标在进度条上（或正在拖）才换成歌词；悬停播放条其他按钮不变。
+              // 迷你歌词设置开启时始终显示歌词；关闭时只在鼠标位于进度条上（或正在拖）时显示。
+              // 悬停播放条其他按钮不算。
               final showLyric =
-                  (at != null || dragging) && app.miniLyric && app.hasLyrics;
+                  app.hasLyrics && (app.miniLyric || at != null || dragging);
               // 拖动时左边的时间跟着手走。
               final elapsed = dragging && at != null
                   ? at * t.seconds

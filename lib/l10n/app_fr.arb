@@ -144,7 +144,7 @@
   "settingsAccentColor": "Couleur d'accentuation",
   "settingsLanguage": "Langue",
   "langSystem": "Suivre le système",
-  "settingsMiniLyric": "Afficher les paroles dans le mini-lecteur",
+  "settingsMiniLyric": "Toujours afficher les paroles dans le mini-lecteur",
   "settingsKeepRunning": "Continuer en arrière-plan après la fermeture",
   "trayShowWindow": "Afficher la fenêtre",
   "trayQuit": "Quitter",

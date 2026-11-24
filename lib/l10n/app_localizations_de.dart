@@ -424,7 +424,7 @@ class AppLocalizationsDe extends AppLocalizations {
   String get langSystem => 'Systemsprache';
 
   @override
-  String get settingsMiniLyric => 'Aktuellen Songtext im Mini-Player anzeigen';
+  String get settingsMiniLyric => 'Songtext immer im Mini-Player anzeigen';
 
   @override
   String get settingsKeepRunning =>

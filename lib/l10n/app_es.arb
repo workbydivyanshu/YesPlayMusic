@@ -144,7 +144,7 @@
   "settingsAccentColor": "Color de acento",
   "settingsLanguage": "Idioma",
   "langSystem": "Seguir al sistema",
-  "settingsMiniLyric": "Mostrar letra actual en el minirreproductor",
+  "settingsMiniLyric": "Mostrar siempre la letra en el mini reproductor",
   "settingsKeepRunning": "Seguir en segundo plano al cerrar la ventana",
   "trayShowWindow": "Mostrar ventana",
   "trayQuit": "Salir",

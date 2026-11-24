@@ -144,7 +144,7 @@
   "settingsAccentColor": "Akzentfarbe",
   "settingsLanguage": "Sprache",
   "langSystem": "Systemsprache",
-  "settingsMiniLyric": "Aktuellen Songtext im Mini-Player anzeigen",
+  "settingsMiniLyric": "Songtext immer im Mini-Player anzeigen",
   "settingsKeepRunning": "Nach dem Schließen im Hintergrund weiterlaufen",
   "trayShowWindow": "Fenster anzeigen",
   "trayQuit": "Beenden",

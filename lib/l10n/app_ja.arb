@@ -144,7 +144,7 @@
   "settingsAccentColor": "アクセントカラー",
   "settingsLanguage": "言語",
   "langSystem": "システムに従う",
-  "settingsMiniLyric": "ミニプレイヤーに現在の歌詞を表示",
+  "settingsMiniLyric": "ミニプレーヤーに常に歌詞を表示",
   "settingsKeepRunning": "ウィンドウを閉じてもバックグラウンドで実行",
   "trayShowWindow": "ウィンドウを表示",
   "trayQuit": "終了",

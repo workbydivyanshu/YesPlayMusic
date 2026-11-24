@@ -424,7 +424,7 @@ class AppLocalizationsRu extends AppLocalizations {
   String get langSystem => 'Как в системе';
 
   @override
-  String get settingsMiniLyric => 'Показывать текст песни в мини-плеере';
+  String get settingsMiniLyric => 'Всегда показывать текст песни в мини-плеере';
 
   @override
   String get settingsKeepRunning => 'Продолжать работу после закрытия окна';

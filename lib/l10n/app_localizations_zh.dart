@@ -422,7 +422,7 @@ class AppLocalizationsZh extends AppLocalizations {
   String get langSystem => '跟随系统';
 
   @override
-  String get settingsMiniLyric => '在迷你播放器显示当前歌词';
+  String get settingsMiniLyric => '在迷你播放器中始终显示歌词';
 
   @override
   String get settingsKeepRunning => '关闭窗口后在后台继续运行';
@@ -2213,7 +2213,7 @@ class AppLocalizationsZhHant extends AppLocalizationsZh {
   String get langSystem => '跟隨系統';
 
   @override
-  String get settingsMiniLyric => '在迷你播放器顯示目前歌詞';
+  String get settingsMiniLyric => '在迷你播放器中始終顯示歌詞';
 
   @override
   String get settingsKeepRunning => '關閉視窗後在背景繼續執行';

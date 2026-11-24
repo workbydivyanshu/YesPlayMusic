@@ -145,6 +145,9 @@
   "settingsLanguage": "Language",
   "langSystem": "Follow System",
   "settingsMiniLyric": "Always show lyrics in mini player",
+  "@settingsMiniLyric": {
+    "description": "Settings toggle: on, the mini player always shows the current lyric; off, only while hovering its progress bar"
+  },
   "settingsKeepRunning": "Keep running after closing window",
   "trayShowWindow": "Show window",
   "trayQuit": "Quit",

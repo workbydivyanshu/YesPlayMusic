@@ -3256,7 +3256,15 @@ class AppState extends ChangeNotifier {
   // ───── 设置 ─────
   int swatch = 0;
   String lang = _prefs()['lang'] as String? ?? 'system';
-  bool miniLyric = true;
+
+  /// On: the mini player always shows the current lyric. Off: only while hovering its progress bar.
+  bool _miniLyric = _prefs()['miniLyric'] as bool? ?? true;
+  bool get miniLyric => _miniLyric;
+  set miniLyric(bool v) {
+    _miniLyric = v;
+    _savePrefs({'miniLyric': v});
+  }
+
   bool tray = false;
 
   /// Closing the window hides/minimizes it and keeps the app (and playback) running.
