@@ -4,6 +4,20 @@
 
 ## [Unreleased]
 
+## [3.0.1] - 2026-11-24
+
+### 修复与优化
+
+- **Linux 崩溃修复**：修复在部分 Linux 发行版上因 LuaJIT 与 Flutter LLVM Unwinder 符号冲突导致的 SIGSEGV 启动崩溃（链接器前置 `libgcc_s.so.1` 确保符号解析正确）。([#2532](https://github.com/qier222/YesPlayMusic/issues/2532))
+- **Linux 窗口位置记忆**：自动保存并恢复窗口大小、位置与最大化状态（保存在 `~/.config/yesplaymusic/window_state.json`），并优化取消最大化时的尺寸保护与写入防抖。([#2526](https://github.com/qier222/YesPlayMusic/issues/2526))
+- **唱片架渲染优化与崩溃修复**：优化大型曲库的专辑唱片架渲染性能，采用视口滑动窗口虚拟化；修复快速滚动或到达边界时除零 (NaN) 导致的红屏崩溃。([#2531](https://github.com/qier222/YesPlayMusic/issues/2531))
+- **单曲循环模式**：播放循环模式支持「单曲循环」，按 列表循环 / 单曲循环 / 顺序播放 循环切换，正在播放页与迷你播放栏支持状态图标提示，多语言完整本地化。([#2534](https://github.com/qier222/YesPlayMusic/issues/2534))
+- **多源歌词引擎集成**：
+  - 集成多源歌词竞速引擎，支持 Apple Music、Lrc.Red、BetterLyrics、酷狗音乐（KRC）、LRCLIB 及 Musixmatch。
+  - 正在播放界面支持歌词源标识、歌词控制面板（换源、±0.25s 偏移微调与记忆、手动搜索歌词、导出为本地 `.lrc` 文件）。
+  - 支持纯文本无时间轴歌词的优雅降级展示与平滑滚动。
+- **打包与构建**：Linux 发布流程新增开箱即用的 AppImage 独立可执行安装包。
+
 ## [3.0.0] - 2026-11-24
 
 YesPlayMusic 用 Flutter 重写的第一个版本。
@@ -27,5 +41,6 @@ YesPlayMusic 用 Flutter 重写的第一个版本。
 - 日志写进本地文件，设置 → 关于 里可以打开。
 - 匿名使用统计，可以在 设置 → 关于 里关闭。
 
-[Unreleased]: https://github.com/qier222/YesPlayMusic/compare/v3.0.0...HEAD
+[Unreleased]: https://github.com/qier222/YesPlayMusic/compare/v3.0.1...HEAD
+[3.0.1]: https://github.com/qier222/YesPlayMusic/compare/v3.0.0...v3.0.1
 [3.0.0]: https://github.com/qier222/YesPlayMusic/releases/tag/v3.0.0

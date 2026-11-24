@@ -1,5 +1,5 @@
 /// 应用版本，和 pubspec.yaml 的 version 一致（test/version_test.dart 检查）。
-const appVersion = '3.0.0';
+const appVersion = '3.0.1';
 
 /// 比较两个 x.y.z 版本号：a 比 b 新返回正数，相同 0，旧负数。
 /// 缺的段当 0，-beta 这类后缀忽略。
