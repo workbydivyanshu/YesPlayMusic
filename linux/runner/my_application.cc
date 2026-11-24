@@ -201,6 +201,12 @@ static gboolean on_window_state_event(GtkWidget* widget,
 }
 
 static void on_window_destroy(GtkWidget* widget) {
+  // Cancel any pending debounced save so its timer can't fire against this
+  // now-freed widget (use-after-free) during shutdown.
+  if (_save_pending != 0) {
+    g_source_remove(_save_pending);
+    _save_pending = 0;
+  }
   save_window_state(GTK_WINDOW(widget));
 }
 
@@ -226,7 +232,36 @@ static void my_application_activate(GApplication* application) {
   gtk_window_set_geometry_hints(window, nullptr, &hints, GDK_HINT_MIN_SIZE);
 
   if (saved_x >= 0 && saved_y >= 0) {
-    gtk_window_move(window, saved_x, saved_y);
+    // Clamp the restored position to the current workarea so a window saved
+    // on a since-disconnected external monitor doesn't open off-screen.
+    GdkRectangle workarea = {0, 0, 0, 0};
+    GdkScreen* screen = gtk_window_get_screen(window);
+    if (screen != nullptr) {
+      gdk_screen_get_workarea(screen, &workarea);
+    }
+    gint clamped_w = saved_width;
+    gint clamped_h = saved_height;
+    if (workarea.width > 0 && clamped_w > workarea.width) {
+      clamped_w = workarea.width;
+    }
+    if (workarea.height > 0 && clamped_h > workarea.height) {
+      clamped_h = workarea.height;
+    }
+    gint clamped_x = saved_x;
+    gint clamped_y = saved_y;
+    if (workarea.width > 0) {
+      if (clamped_x < workarea.x) clamped_x = workarea.x;
+      if (clamped_x + clamped_w > workarea.x + workarea.width) {
+        clamped_x = workarea.x + workarea.width - clamped_w;
+      }
+    }
+    if (workarea.height > 0) {
+      if (clamped_y < workarea.y) clamped_y = workarea.y;
+      if (clamped_y + clamped_h > workarea.y + workarea.height) {
+        clamped_y = workarea.y + workarea.height - clamped_h;
+      }
+    }
+    gtk_window_move(window, clamped_x, clamped_y);
   }
   if (saved_maximized) {
     gtk_window_maximize(window);
