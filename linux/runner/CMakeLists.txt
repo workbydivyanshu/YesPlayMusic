@@ -19,6 +19,20 @@ apply_standard_settings(${BINARY_NAME})
 # Add preprocessor definitions for the application ID.
 add_definitions(-DAPPLICATION_ID="${APPLICATION_ID}")
 
+# Force libgcc_s.so.1 to precede libflutter_linux_gtk.so in DT_NEEDED so that
+# LuaJIT inside system libmpv (loaded by media_kit) resolves _Unwind_* symbols
+# from libgcc_s instead of Flutter's bundled LLVM unwinder, preventing SIGSEGV
+# on track switches (qier222/YesPlayMusic#2532).
+include(CheckCXXSourceCompiles)
+set(CMAKE_REQUIRED_FLAGS "-Wl,--push-state,--no-as-needed,-lgcc_s,--pop-state")
+check_cxx_source_compiles("int main() { return 0; }" HAVE_LIBGCC_S)
+unset(CMAKE_REQUIRED_FLAGS)
+if(HAVE_LIBGCC_S)
+  target_link_options(${BINARY_NAME} PRIVATE
+    "LINKER:--push-state,--no-as-needed,-lgcc_s,--pop-state"
+  )
+endif()
+
 # Add dependency libraries. Add any application-specific dependencies here.
 target_link_libraries(${BINARY_NAME} PRIVATE flutter)
 target_link_libraries(${BINARY_NAME} PRIVATE PkgConfig::GTK)
