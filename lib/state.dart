@@ -2245,6 +2245,7 @@ class AppState extends ChangeNotifier {
       final at = position;
       await _eng.open(
         s,
+        key: t.key,
         play: playing,
         start: at > 0.5 ? Duration(milliseconds: (at * 1000).round()) : null,
       );

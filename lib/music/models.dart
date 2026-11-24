@@ -718,6 +718,8 @@ class AudioStream {
     this.size = 0,
     this.peak = 0,
     this.gain = 0,
+    this.albumPeak = 0,
+    this.albumGain = 0,
     this.headers = const {},
   });
 
@@ -728,7 +730,10 @@ class AudioStream {
   final String type;
   final String quality;
   final int bitRate, size;
-  final double peak, gain;
+
+  /// ReplayGain：单曲 / 专辑增益（dB）和峰值（线性，1 = 0 dBFS），0 表示没有。
+  /// 文件里的 ReplayGain 标签优先；这些是给标签丢失的流（比如服务端转码）用的。
+  final double peak, gain, albumPeak, albumGain;
   final Map<String, String> headers;
 
   factory AudioStream.fromJson(Json j) => AudioStream(
@@ -739,6 +744,8 @@ class AudioStream {
     size: _i(j['size']),
     peak: _d(j['peak']),
     gain: _d(j['gain']),
+    albumPeak: _d(j['albumPeak']),
+    albumGain: _d(j['albumGain']),
     headers: j['headers'] is Map
         ? {
             for (final e in (j['headers'] as Map).entries)

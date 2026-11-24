@@ -79,7 +79,7 @@ void main() {
 
     await (() async {
       await engine.setVolume(0.2);
-      await engine.open(await sources.stream(track));
+      await engine.open(await sources.stream(track), key: 'tone');
       await done.future.timeout(const Duration(seconds: 10));
     })();
 
