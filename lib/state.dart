@@ -25,7 +25,9 @@ import 'comments.dart';
 import 'mcp/config.dart';
 import 'mcp/mcp_server.dart';
 import 'music/models.dart' as m;
+import 'music/eq.dart';
 import 'music/player.dart';
+import 'music/replay_gain.dart';
 import 'music/source.dart';
 import 'plugin/installer.dart';
 import 'plugin/locale.dart';
@@ -2037,7 +2039,11 @@ class AppState extends ChangeNotifier {
 
   bool get isLiked => liked.contains(track.key);
 
-  AudioEngine? _engine;
+  PlaybackEngine? _engine;
+
+  /// Creates the playback engine; tests swap in a fake.
+  @visibleForTesting
+  static PlaybackEngine Function() engineFactory = AudioEngine.new;
 
   /// 引擎里当前加载的是哪首歌（Track.key）。
   String? _loadedKey;
@@ -2048,33 +2054,45 @@ class AppState extends ChangeNotifier {
   bool get _real => track.ref != null;
   bool get _engineOnTrack => _real && _engineKey == track.key;
 
-  AudioEngine get _eng => _engine ??= _makeEngine();
+  PlaybackEngine get _eng => _engine ??= _makeEngine();
 
-  AudioEngine _makeEngine() {
-    final e = AudioEngine();
+  PlaybackEngine _makeEngine() {
+    final e = engineFactory();
     e.onPosition = (d) {
       if (!_engineOnTrack || _scrubbing || _seeking > 0) return;
       // mpv 每秒上报很多次位置；界面 10 次/秒足够，往回跳（seek）时立即更新。
       final v = d.inMilliseconds / 1000;
       if (v < position || v - position >= 0.1) position = v;
+      _reconcileNext();
+    };
+    e.onDuration = (d) {
+      if (_engineOnTrack) _engineSeconds = d.inMilliseconds / 1000;
     };
     e.onCompleted = () {
-      if (_engineOnTrack) {
-        if (repeatMode == RepeatMode.one) {
-          e.seek(Duration.zero);
-          e.play();
-        } else {
-          next();
-        }
+      if (!_engineOnTrack) return;
+      // 睡眠定时「放完这首」：在下一首开头停下
+      if (sleepAfterTrack) {
+        _clearSleep();
+        next(play: false);
+        return;
+      }
+      if (repeatMode == RepeatMode.one) {
+        e.seek(Duration.zero);
+        e.play();
+      } else {
+        next();
       }
     };
+    e.onAdvanced = _onAdvanced;
     e.onError = (msg) => showToast(L.toastPlaybackError(msg));
     e.setVolume(effectiveVolume);
+    e.setEq(eq);
     return e;
   }
 
   void _stopEngine() {
     _cancelPreload();
+    _armedSig = null;
     if (_loadedKey == null && _engineKey == null) return;
     _loadedKey = null;
     _engineKey = null;
@@ -2116,6 +2134,228 @@ class AppState extends ChangeNotifier {
     _preloadedStream = null;
     if (DateTime.now().difference(p.at) >= _preloadStreamTtl) return null;
     return p.stream;
+  }
+
+  // ───── 无缝播放（gapless） ─────
+  // 当前这首快放完时，把下一首（本地文件或已缓存的音频）排进 mpv，由它自己接着放；
+  // [_onAdvanced] 再把界面上的当前曲目挪过去。下一首变了（插队、删除、随机、循环、
+  // 音量均衡设置…）就撤掉重排，队列操作不用同步 mpv：位置回调会来对账。
+
+  /// 结束前多少秒把下一首排进去。
+  static const _gaplessLead = 30.0;
+
+  /// mpv 里排好的那首：`key|replaygain`。
+  String? _armedSig;
+  bool _arming = false;
+
+  /// 上次没能排进去的（还没缓存）是哪首、什么时候；过一秒再试。
+  String? _armMissSig;
+  DateTime _armMissAt = DateTime(0);
+
+  /// mpv 报来的当前曲目时长（秒），比元数据准；还不知道时是 0。
+  double _engineSeconds = 0;
+
+  /// 引擎里正在放的音源，改 ReplayGain 设置时用。
+  m.AudioStream? _engineStream;
+
+  /// 现在该排进 mpv 的那首；不该排时为 null。
+  Track? get _gaplessNext {
+    if (sleepAfterTrack) return null;
+    if (repeatMode == RepeatMode.one) return null; // 单曲循环，永远不排下一首
+    final n = _nextTrack;
+    if (n == null || n.ref == null || n.key == track.key) return null;
+    return n;
+  }
+
+  void _reconcileNext() {
+    final e = _engine;
+    if (e == null || !_engineOnTrack) return;
+    final n = _gaplessNext;
+    final sig = n == null ? null : '${n.key}|$_rg';
+    if (e.queuedKey != null && sig != _armedSig) {
+      _armedSig = null;
+      e.dropQueued().ignore();
+    }
+    if (n == null || sig == _armedSig || _arming || !playing) return;
+    final total = _engineSeconds > 0 ? _engineSeconds : track.seconds.toDouble();
+    if (total <= 0 || total - position > _gaplessLead) return;
+    // 还没缓存：每秒再试一次（预载可能还在下载）
+    if (sig == _armMissSig &&
+        DateTime.now().difference(_armMissAt) < const Duration(seconds: 1)) {
+      return;
+    }
+    _arming = true;
+    _armNext(n, sig!).whenComplete(() => _arming = false);
+  }
+
+  Future<void> _armNext(Track t, String sig) async {
+    final ref = t.ref!;
+    try {
+      // 只排本地文件：没有请求头、地址不会过期，mpv 预取也快
+      final m.AudioStream? s = ref.source == 'local'
+          ? await sources.stream(ref)
+          : await audioCache.get('${cacheSpace(ref.source)}/${ref.id}');
+      if (s == null || !s.url.startsWith('file:')) {
+        _armMissSig = sig;
+        _armMissAt = DateTime.now();
+        return;
+      }
+      final n = _gaplessNext;
+      if (!_engineOnTrack || n == null || '${n.key}|$_rg' != sig) return;
+      final rg = _rg;
+      await _eng.queueNext(s, key: t.key, rg: rg, gainDb: streamGainDb(s, rg));
+      _armedSig = sig;
+      _engineStream = s;
+    } catch (e) {
+      debugPrint('gapless: $e');
+    }
+  }
+
+  /// mpv 自己切到了排好的那首。
+  void _onAdvanced(String key) {
+    _armedSig = null;
+    final n = _nextTrack;
+    if (n != null && n.key == key) {
+      index = index + 1 < queue.length ? index + 1 : 0;
+    } else {
+      // 最后一刻队列变了：mpv 放的那首还在队列里就跟过去，否则按队列重新打开
+      final i = queue.indexWhere((t) => t.key == key);
+      if (i < 0) {
+        _loadedKey = key;
+        _engineKey = key;
+        _sync();
+        return;
+      }
+      index = i;
+    }
+    final t = track;
+    position = 0;
+    _scrubbing = false;
+    _engineSeconds = 0;
+    _loadedKey = key;
+    _engineKey = key;
+    _preloadedStream = null;
+    _topUpStation();
+    if (!_applyCachedLyrics(t)) _loadLyrics(t);
+    notifyListeners();
+    _schedulePreloadNext();
+  }
+
+  // ───── 音量均衡（ReplayGain） ─────
+  GainMode gainMode = GainMode.values.firstWhere(
+    (x) => x.name == _prefs()['gainMode'],
+    orElse: () => GainMode.smart,
+  );
+
+  /// mpv 的 replaygain 值：smart 模式下，按顺序放专辑时用专辑增益。
+  String get _rg => mpvReplayGain(
+    gainMode,
+    albumOrder: queueFrom.startsWith('album:') && !shuffle,
+  );
+
+  void setGainMode(GainMode mode) {
+    gainMode = mode;
+    _savePrefs({'gainMode': mode.name});
+    final rg = _rg;
+    final s = _engineStream;
+    if (_engineKey != null) {
+      _engine?.setReplayGain(rg, s == null ? 0 : streamGainDb(s, rg));
+    }
+    notifyListeners();
+  }
+
+  // ───── 均衡器 ─────
+  EqSettings eq = EqSettings.fromJson(_prefs()['eq']);
+  Timer? _eqSave;
+
+  /// 拖动时一直在变：引擎立刻跟上，停手半秒后再写 prefs。
+  void setEq(EqSettings s) {
+    eq = s;
+    _engine?.setEq(s);
+    _eqSave?.cancel();
+    _eqSave = Timer(
+      const Duration(milliseconds: 500),
+      () => _savePrefs({'eq': eq.toJson()}),
+    );
+    notifyListeners();
+  }
+
+  // ───── 睡眠定时 ─────
+  // 最后 [sleepFade] 秒渐弱、到点暂停；也可以「放完这首」。渐弱只缩放引擎音量，
+  // 不动保存的音量。
+
+  /// 截止时间；关着或「放完这首」时为 null。
+  DateTime? sleepAt;
+
+  /// 当前这首放完就停。
+  bool sleepAfterTrack = false;
+
+  static const sleepFade = Duration(seconds: 20);
+  Timer? _sleepTick;
+
+  bool get sleepOn => sleepAt != null || sleepAfterTrack;
+
+  /// 还剩多久；只有设了时间才有（「放完这首」没有倒计时，返回 null）。
+  Duration? get sleepLeft {
+    final at = sleepAt;
+    if (at == null) return null;
+    final d = at.difference(DateTime.now());
+    return d.isNegative ? Duration.zero : d;
+  }
+
+  /// [d] 之后停；null 关掉。
+  void setSleepTimer(Duration? d) {
+    _clearSleep();
+    if (d != null) {
+      sleepAt = DateTime.now().add(d);
+      _sleepTick = Timer.periodic(
+        const Duration(milliseconds: 250),
+        (_) => _onSleepTick(),
+      );
+    }
+    notifyListeners();
+  }
+
+  /// 当前这首放完就停。
+  void setSleepAfterTrack() {
+    _clearSleep();
+    sleepAfterTrack = true;
+    // 撤掉 mpv 里排好的，才能真的停在这首末尾
+    _reconcileNext();
+    notifyListeners();
+  }
+
+  void _clearSleep() {
+    _sleepTick?.cancel();
+    _sleepTick = null;
+    sleepAt = null;
+    sleepAfterTrack = false;
+    _engine?.setFade(1);
+  }
+
+  void _onSleepTick() {
+    final left = sleepLeft;
+    if (left == null) return;
+    if (left == Duration.zero) {
+      // 先暂停再还原音量，免得突然来一声
+      final e = _engine;
+      _sleepTick?.cancel();
+      _sleepTick = null;
+      sleepAt = null;
+      pause();
+      e?.setFade(1);
+      notifyListeners();
+      return;
+    }
+    _engine?.setFade(sleepFadeAt(left));
+  }
+
+  /// 还剩 [left] 时的音量系数（幅度）：最后 [sleepFade] 秒按平方曲线降到 0，
+  /// 比线性听着更均匀。
+  static double sleepFadeAt(Duration left) {
+    if (left >= sleepFade) return 1;
+    final x = left.inMilliseconds / sleepFade.inMilliseconds;
+    return (x * x).clamp(0.0, 1.0);
   }
 
   /// 当前歌稳定播放后，在后台预载下一首的歌词和音源。
@@ -2202,6 +2442,7 @@ class AppState extends ChangeNotifier {
     }
     _loadedKey = t.key;
     _scrubbing = false;
+    _armedSig = null;
     // 歌词已在缓存里（比如预载好了）就同步填上，切歌首帧不闪无歌词界面
     if (_applyCachedLyrics(t)) notifyListeners();
     // 先停掉旧歌：取新歌地址期间旧歌不再出声，也不再上报进度
@@ -2243,14 +2484,19 @@ class AppState extends ChangeNotifier {
       final s = cached ?? preloaded ?? await sources.stream(ref);
       if (_loadedKey != t.key) return; // 取地址期间已经切到别的歌
       final at = position;
+      final rg = _rg;
+      _engineSeconds = 0;
       await _eng.open(
         s,
         key: t.key,
         play: playing,
         start: at > 0.5 ? Duration(milliseconds: (at * 1000).round()) : null,
+        rg: rg,
+        gainDb: streamGainDb(s, rg),
       );
       if (_loadedKey == t.key) {
         _engineKey = t.key;
+        _engineStream = s;
         // 只记哪个源，不记哪首歌；启动时恢复队列（不自动播放）不算
         if (playing) {
           Analytics.instance.event('play', {
@@ -2331,7 +2577,8 @@ class AppState extends ChangeNotifier {
     seek((position + s) / track.seconds);
   }
 
-  void next() {
+  /// 下一首。[play] 为 false 时只切过去、不开始播放（睡眠定时用）。
+  void next({bool play = true}) {
     if (queue.isEmpty) return;
     // 电台放到最后一首：等下一批到了再接着放
     if (index + 1 >= queue.length &&
@@ -2344,10 +2591,10 @@ class AppState extends ChangeNotifier {
     // 暂停时点下一首也直接开始播放
     if (index + 1 < queue.length) {
       index++;
-      playing = true;
+      playing = play;
     } else if (repeatMode == RepeatMode.all) {
       index = 0;
-      playing = true;
+      playing = play;
     } else {
       playing = false;
     }
@@ -3382,6 +3629,12 @@ class AppState extends ChangeNotifier {
     _refreshTimer?.cancel();
     _pluginUpdateTimer?.cancel();
     _preloadTimer?.cancel();
+    _sleepTick?.cancel();
+    // 停手半秒内退出：把还没写的均衡器设置写掉
+    if (_eqSave?.isActive ?? false) {
+      _eqSave!.cancel();
+      _savePrefs({'eq': eq.toJson()});
+    }
     _cacheSub?.cancel();
     // 拖完音量半秒内退出：把还没写的音量写掉
     if (_volumeSave?.isActive ?? false) {
