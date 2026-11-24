@@ -2379,6 +2379,11 @@ class AppState extends ChangeNotifier {
     if (ref == null) return;
     _preloadKey = t.key;
 
+    // 0. Preload the cover: downloads it into the image disk cache and
+    // extracts its colors, so the Now Playing background can start its
+    // transition the moment the song changes instead of waiting on the network
+    if (t.cover.isNotEmpty) CoverColors.instance.load(t.cover).ignore();
+
     // 1. 预载歌词（走数据缓存，切过去时可直接同步命中）
     final src = sources[ref.source];
     if (src != null && src.can(Op.lyrics)) {
@@ -2589,6 +2594,7 @@ class AppState extends ChangeNotifier {
       return;
     }
     // 暂停时点下一首也直接开始播放
+    _cameBackTo = null;
     if (index + 1 < queue.length) {
       index++;
       playing = play;
@@ -2610,10 +2616,19 @@ class AppState extends ChangeNotifier {
     } else {
       index--;
       position = 0;
+      _cameBackTo = track.key;
     }
     notifyListeners();
     _sync();
   }
+
+  /// The song [prev] last stepped back to; anything else that lands on a
+  /// different song makes [skippedBack] false without needing a reset.
+  String? _cameBackTo;
+
+  /// Whether the current song was reached by going back ([prev]), so song
+  /// change animations can run in reverse.
+  bool get skippedBack => _cameBackTo == track.key;
 
   /// 播放某首歌：队列里有就跳过去，没有就插到当前之后。
   void playTrack(Track t) {
