@@ -37,10 +37,9 @@ cp "linux/packaging/yesplaymusic.png" "$APPDIR/$APP_NAME.png"
 # AppRun wrapper
 cat > "$APPDIR/AppRun" <<EOF
 #!/usr/bin/env bash
-set -euo pipefail
-APPDIR=\$(dirname "\$(readlink -f "\$0")")
-export LD_LIBRARY_PATH="\$APPDIR/usr/lib/yesplaymusic:\$LD_LIBRARY_PATH"
-exec "\$APPDIR/usr/bin/yesplaymusic" "\$@"
+APPDIR="\$(dirname "\$(readlink -f "\$0")")"
+export LD_LIBRARY_PATH="\$APPDIR/usr/lib/yesplaymusic:\$APPDIR/usr/lib/yesplaymusic/lib:\${LD_LIBRARY_PATH:-}"
+exec "\$APPDIR/usr/lib/yesplaymusic/yesplaymusic" "\$@"
 EOF
 chmod +x "$APPDIR/AppRun"
 
