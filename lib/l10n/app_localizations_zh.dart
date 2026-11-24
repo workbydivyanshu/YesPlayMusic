@@ -1888,6 +1888,9 @@ class AppLocalizationsZhHant extends AppLocalizationsZh {
   String get miniRepeatOff => '不循環';
 
   @override
+  String get miniRepeatOne => '單曲循環';
+
+  @override
   String get miniQueue => '播放佇列';
 
   @override

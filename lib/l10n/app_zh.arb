@@ -79,6 +79,7 @@
   "miniShuffleOn": "随机播放：开",
   "miniRepeatOn": "列表循环",
   "miniRepeatOff": "不循环",
+  "miniRepeatOne": "单曲循环",
   "miniQueue": "播放队列",
   "miniOpenNowPlaying": "打开正在播放",
   "miniMute": "静音",

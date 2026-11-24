@@ -538,6 +538,9 @@ abstract class AppLocalizations {
   String get miniRepeatOff;
 
   /// No description provided for @miniRepeatOne.
+  ///
+  /// In zh, this message translates to:
+  /// **'单曲循环'**
   String get miniRepeatOne;
 
   /// No description provided for @miniQueue.
