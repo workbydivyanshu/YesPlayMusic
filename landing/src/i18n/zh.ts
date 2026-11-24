@@ -76,6 +76,8 @@ export default {
     close: '关闭',
     cta: { mac: '下载 macOS 版', winSetup: '下载 Windows 安装包', winPortable: '下载 Windows 便携版', linux: '下载 Linux 版' },
     os: { mac: ['macOS', 'macOS 12+'], win: ['Windows', '10 / 11'], linux: ['Linux', 'x64'] },
-    macNote: 'Apple Silicon',
+    pickMac: '选择 Mac 芯片',
+    macArm64: 'Apple Silicon（M 系列）',
+    macIntel: 'Intel',
   },
 };

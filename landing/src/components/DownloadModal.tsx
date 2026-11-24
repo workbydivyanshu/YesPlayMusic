@@ -3,11 +3,11 @@ import Icon from './Icon';
 
 type Os = 'mac' | 'win' | 'linux';
 type Texts = {
-  title: string; pickOs: string; pickWin: string; setup: string; portable: string; smartscreen: string; linuxNote: string; close: string; macNote: string;
+  title: string; pickOs: string; pickWin: string; pickMac: string; macArm64: string; macIntel: string; setup: string; portable: string; smartscreen: string; linuxNote: string; close: string;
   cta: Record<'mac' | 'winSetup' | 'winPortable' | 'linux', string>;
   os: Record<Os, string[]>;
 };
-type Urls = Record<'mac' | 'winSetup' | 'winPortable' | 'linux', string>;
+type Urls = Record<'mac' | 'macIntel' | 'winSetup' | 'winPortable' | 'linux', string>;
 
 function detect(): Os {
   const p = ((navigator as any).userAgentData?.platform || navigator.platform || navigator.userAgent).toLowerCase();
@@ -21,6 +21,7 @@ export default function DownloadModal({ t, urls }: { t: Texts; urls: Urls }) {
   const [open, setOpen] = useState(false);
   const [os, setOs] = useState<Os>('mac');
   const [pkg, setPkg] = useState<'winSetup' | 'winPortable'>('winSetup');
+  const [macArch, setMacArch] = useState<'mac' | 'macIntel'>('mac');
 
   useEffect(() => {
     setOs(detect());
@@ -40,7 +41,8 @@ export default function DownloadModal({ t, urls }: { t: Texts; urls: Urls }) {
   }, [open]);
 
   if (!open) return null;
-  const key = os === 'win' ? pkg : os;
+  const key = os === 'mac' ? macArch : os === 'win' ? pkg : 'linux';
+  const ctaKey = os === 'win' ? pkg : os;
   const file = urls[key].split('/').pop();
 
   return (
@@ -61,6 +63,15 @@ export default function DownloadModal({ t, urls }: { t: Texts; urls: Urls }) {
             </button>
           ))}
         </div>
+        {os === 'mac' && (
+          <>
+            <p className="modal-label">{t.pickMac}</p>
+            <div className="segmented" role="radiogroup" aria-label={t.pickMac}>
+              <button role="radio" aria-checked={macArch === 'mac'} className={macArch === 'mac' ? 'on' : ''} onClick={() => setMacArch('mac')}>{t.macArm64}</button>
+              <button role="radio" aria-checked={macArch === 'macIntel'} className={macArch === 'macIntel' ? 'on' : ''} onClick={() => setMacArch('macIntel')}>{t.macIntel}</button>
+            </div>
+          </>
+        )}
         {os === 'win' ? (
           <>
             <p className="modal-label">{t.pickWin}</p>
@@ -73,12 +84,12 @@ export default function DownloadModal({ t, urls }: { t: Texts; urls: Urls }) {
         ) : (
           <div className="file-row">
             <code>{file}</code>
-            <span>{os === 'mac' ? t.macNote : t.linuxNote}</span>
+            <span>{os === 'mac' ? (macArch === 'mac' ? t.macArm64 : t.macIntel) : t.linuxNote}</span>
           </div>
         )}
         <a className="btn btn-white btn-block" href={urls[key]}>
           <Icon name="download" size={20} />
-          {t.cta[key]}
+          {t.cta[ctaKey]}
         </a>
       </div>
     </div>

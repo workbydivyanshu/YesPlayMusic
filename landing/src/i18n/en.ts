@@ -78,7 +78,9 @@ const en: typeof zh = {
     close: 'Close',
     cta: { mac: 'Download for Mac', winSetup: 'Download installer', winPortable: 'Download portable', linux: 'Download for Linux' },
     os: { mac: ['macOS', 'macOS 12+'], win: ['Windows', '10 / 11'], linux: ['Linux', 'x64'] },
-    macNote: 'Apple Silicon',
+    pickMac: 'Choose your Mac chip',
+    macArm64: 'Apple Silicon (M-series)',
+    macIntel: 'Intel',
   },
 };
 export default en;
