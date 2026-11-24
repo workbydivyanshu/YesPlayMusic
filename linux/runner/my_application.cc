@@ -20,6 +20,7 @@ static gint saved_height = 900;
 static gint saved_x = -1;
 static gint saved_y = -1;
 static gboolean saved_maximized = FALSE;
+static guint _save_pending = 0;
 
 static const gchar* kWindowStateFilename = "window_state.json";
 
@@ -131,14 +132,6 @@ static void load_window_state() {
 }
 
 static void save_window_state(GtkWindow* window) {
-  gint width = 0;
-  gint height = 0;
-  gtk_window_get_size(window, &width, &height);
-
-  gint x = 0;
-  gint y = 0;
-  gtk_window_get_position(window, &x, &y);
-
   gboolean maximized = gtk_window_is_maximized(window);
 
   gchar* path = get_window_state_path();
@@ -154,17 +147,41 @@ static void save_window_state(GtkWindow* window) {
     return;
   }
   fprintf(file, "{\n");
-  fprintf(file, "  \"width\": %d,\n", width);
-  fprintf(file, "  \"height\": %d,\n", height);
-  fprintf(file, "  \"x\": %d,\n", x);
-  fprintf(file, "  \"y\": %d,\n", y);
-  fprintf(file, "  \"is_maximized\": %s\n", maximized ? "true" : "false");
+  if (maximized) {
+    fprintf(file, "  \"is_maximized\": true\n");
+  } else {
+    gint width = 0;
+    gint height = 0;
+    gtk_window_get_size(window, &width, &height);
+
+    gint x = 0;
+    gint y = 0;
+    gtk_window_get_position(window, &x, &y);
+
+    fprintf(file, "  \"width\": %d,\n", width);
+    fprintf(file, "  \"height\": %d,\n", height);
+    fprintf(file, "  \"x\": %d,\n", x);
+    fprintf(file, "  \"y\": %d,\n", y);
+    fprintf(file, "  \"is_maximized\": false\n");
+  }
   fprintf(file, "}\n");
   fclose(file);
 }
 
+static gboolean save_window_state_debounced(gpointer data) {
+  _save_pending = 0;
+  save_window_state(GTK_WINDOW(data));
+  return G_SOURCE_REMOVE;
+}
+
 static gboolean on_configure_event(GtkWidget* widget, GdkEventConfigure* event) {
-  save_window_state(GTK_WINDOW(widget));
+  if (gtk_window_is_maximized(GTK_WINDOW(widget))) {
+    return FALSE;
+  }
+  if (_save_pending != 0) {
+    g_source_remove(_save_pending);
+  }
+  _save_pending = g_timeout_add(500, save_window_state_debounced, widget);
   return FALSE;
 }
 
