@@ -1,5 +1,11 @@
 #include "my_application.h"
 
+#include <stdio.h>
+#include <stdlib.h>
+#include <string.h>
+#include <sys/stat.h>
+#include <unistd.h>
+
 #include <flutter_linux/flutter_linux.h>
 
 #include "flutter/generated_plugin_registrant.h"
@@ -8,6 +14,169 @@ struct _MyApplication {
   GtkApplication parent_instance;
   char** dart_entrypoint_arguments;
 };
+
+static gint saved_width = 1440;
+static gint saved_height = 900;
+static gint saved_x = -1;
+static gint saved_y = -1;
+static gboolean saved_maximized = FALSE;
+
+static const gchar* kWindowStateFilename = "window_state.json";
+
+static gchar* get_config_dir() {
+  const gchar* xdg = g_getenv("XDG_CONFIG_HOME");
+  if (xdg != nullptr && xdg[0] != '\0') {
+    return g_strdup(xdg);
+  }
+  const gchar* home = g_getenv("HOME");
+  if (home != nullptr && home[0] != '\0') {
+    return g_build_path("/", home, ".config", nullptr);
+  }
+  return g_strdup(".config");
+}
+
+static gchar* get_window_state_path() {
+  gchar* config_dir = get_config_dir();
+  gchar* app_dir = g_build_filename(config_dir, "yesplaymusic", nullptr);
+  g_free(config_dir);
+  gchar* path = g_build_filename(app_dir, kWindowStateFilename, nullptr);
+  g_free(app_dir);
+  return path;
+}
+
+static gboolean read_json_int(const gchar* json, const gchar* key, gint* out) {
+  gchar pattern[64];
+  snprintf(pattern, sizeof(pattern), "\"%s\":", key);
+  const gchar* found = strstr(json, pattern);
+  if (found == nullptr) {
+    return FALSE;
+  }
+  found += strlen(pattern);
+  while (*found == ' ' || *found == '\t' || *found == '\n' || *found == '\r') {
+    found++;
+  }
+  gchar* end = nullptr;
+  long value = strtol(found, &end, 10);
+  if (end == found) {
+    return FALSE;
+  }
+  *out = static_cast<gint>(value);
+  return TRUE;
+}
+
+static gboolean read_json_bool(const gchar* json, const gchar* key,
+                               gboolean* out) {
+  gchar pattern[64];
+  snprintf(pattern, sizeof(pattern), "\"%s\":", key);
+  const gchar* found = strstr(json, pattern);
+  if (found == nullptr) {
+    return FALSE;
+  }
+  found += strlen(pattern);
+  while (*found == ' ' || *found == '\t' || *found == '\n' || *found == '\r') {
+    found++;
+  }
+  if (strncmp(found, "true", 4) == 0) {
+    *out = TRUE;
+    return TRUE;
+  }
+  if (strncmp(found, "false", 5) == 0) {
+    *out = FALSE;
+    return TRUE;
+  }
+  return FALSE;
+}
+
+static void load_window_state() {
+  gchar* path = get_window_state_path();
+  FILE* file = fopen(path, "r");
+  g_free(path);
+  if (file == nullptr) {
+    return;
+  }
+  fseek(file, 0, SEEK_END);
+  long length = ftell(file);
+  fseek(file, 0, SEEK_SET);
+  if (length <= 0) {
+    fclose(file);
+    return;
+  }
+  gchar* json = static_cast<gchar*>(g_malloc(length + 1));
+  size_t read = fread(json, 1, length, file);
+  json[read] = '\0';
+  fclose(file);
+
+  gint width = 0;
+  gint height = 0;
+  gint x = 0;
+  gint y = 0;
+  gboolean maximized = FALSE;
+
+  if (read_json_int(json, "width", &width) && width > 0) {
+    saved_width = width;
+  }
+  if (read_json_int(json, "height", &height) && height > 0) {
+    saved_height = height;
+  }
+  if (read_json_int(json, "x", &x)) {
+    saved_x = x;
+  }
+  if (read_json_int(json, "y", &y)) {
+    saved_y = y;
+  }
+  read_json_bool(json, "is_maximized", &maximized);
+  saved_maximized = maximized;
+
+  g_free(json);
+}
+
+static void save_window_state(GtkWindow* window) {
+  gint width = 0;
+  gint height = 0;
+  gtk_window_get_size(window, &width, &height);
+
+  gint x = 0;
+  gint y = 0;
+  gtk_window_get_position(window, &x, &y);
+
+  gboolean maximized = gtk_window_is_maximized(window);
+
+  gchar* path = get_window_state_path();
+  gchar* config_dir = get_config_dir();
+  gchar* app_dir = g_build_filename(config_dir, "yesplaymusic", nullptr);
+  g_free(config_dir);
+  g_mkdir_with_parents(app_dir, 0755);
+  g_free(app_dir);
+
+  FILE* file = fopen(path, "w");
+  g_free(path);
+  if (file == nullptr) {
+    return;
+  }
+  fprintf(file, "{\n");
+  fprintf(file, "  \"width\": %d,\n", width);
+  fprintf(file, "  \"height\": %d,\n", height);
+  fprintf(file, "  \"x\": %d,\n", x);
+  fprintf(file, "  \"y\": %d,\n", y);
+  fprintf(file, "  \"is_maximized\": %s\n", maximized ? "true" : "false");
+  fprintf(file, "}\n");
+  fclose(file);
+}
+
+static gboolean on_configure_event(GtkWidget* widget, GdkEventConfigure* event) {
+  save_window_state(GTK_WINDOW(widget));
+  return FALSE;
+}
+
+static gboolean on_window_state_event(GtkWidget* widget,
+                                      GdkEventWindowState* event) {
+  save_window_state(GTK_WINDOW(widget));
+  return FALSE;
+}
+
+static void on_window_destroy(GtkWidget* widget) {
+  save_window_state(GTK_WINDOW(widget));
+}
 
 G_DEFINE_TYPE(MyApplication, my_application, GTK_TYPE_APPLICATION)
 
@@ -20,14 +189,22 @@ static void first_frame_cb(MyApplication* self, FlView* view) {
 static void my_application_activate(GApplication* application) {
   MyApplication* self = MY_APPLICATION(application);
 
+  load_window_state();
+
   GtkWindow* window =
       GTK_WINDOW(gtk_application_window_new(GTK_APPLICATION(application)));
-  // 界面按 1440 × 900 设计，至少要 1280 × 800
-  gtk_window_set_default_size(window, 1440, 900);
+  gtk_window_set_default_size(window, saved_width, saved_height);
   GdkGeometry hints = {};
   hints.min_width = 1280;
   hints.min_height = 800;
   gtk_window_set_geometry_hints(window, nullptr, &hints, GDK_HINT_MIN_SIZE);
+
+  if (saved_x >= 0 && saved_y >= 0) {
+    gtk_window_move(window, saved_x, saved_y);
+  }
+  if (saved_maximized) {
+    gtk_window_maximize(window);
+  }
 
   // If you want to use a header bar, uncomment the following lines.
   // Header bars are commonly used in GNOME based desktop environments and
@@ -61,6 +238,12 @@ static void my_application_activate(GApplication* application) {
   gtk_widget_show(GTK_WIDGET(view));
   gtk_container_add(GTK_CONTAINER(window), GTK_WIDGET(view));
 
+  g_signal_connect(window, "configure-event", G_CALLBACK(on_configure_event),
+                   nullptr);
+  g_signal_connect(window, "window-state-event",
+                   G_CALLBACK(on_window_state_event), nullptr);
+  g_signal_connect(window, "destroy", G_CALLBACK(on_window_destroy), nullptr);
+
   // Show the window when Flutter renders.
   // Requires the view to be realized so we can start rendering.
   g_signal_connect_swapped(view, "first-frame", G_CALLBACK(first_frame_cb),
@@ -74,8 +257,8 @@ static void my_application_activate(GApplication* application) {
 
 // Implements GApplication::local_command_line.
 static gboolean my_application_local_command_line(GApplication* application,
-                                                  gchar*** arguments,
-                                                  int* exit_status) {
+                                                   gchar*** arguments,
+                                                   int* exit_status) {
   MyApplication* self = MY_APPLICATION(application);
   // Strip out the first argument as it is the binary name.
   self->dart_entrypoint_arguments = g_strdupv(*arguments + 1);
