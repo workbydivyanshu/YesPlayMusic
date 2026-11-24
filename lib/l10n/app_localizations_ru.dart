@@ -1789,4 +1789,54 @@ class AppLocalizationsRu extends AppLocalizations {
 
   @override
   String get lyricsSaveFailedToast => 'Не удалось сохранить .lrc';
+
+  @override
+  String get actionReplace => 'Заменить';
+
+  @override
+  String pluginIdConflict(String name, String source) {
+    return '«$name» уже установлен из $source — это другой источник с тем же id. При замене его настройки, вход и выданные разрешения будут удалены.';
+  }
+
+  @override
+  String pluginIdConflictUnknown(String name) {
+    return '«$name» уже установлен с тем же id, но нельзя подтвердить, что он из того же источника. При замене его настройки, вход и выданные разрешения будут удалены.';
+  }
+
+  @override
+  String get pluginCheckUpdate => 'Проверить обновления';
+
+  @override
+  String pluginUpToDate(String name) {
+    return '«$name» — последняя версия';
+  }
+
+  @override
+  String pluginUpdateFoundToast(String name, String version) {
+    return '«$name» можно обновить до $version';
+  }
+
+  @override
+  String pluginUpdateCheckFailed(String error) {
+    return 'Не удалось проверить обновления: $error';
+  }
+
+  @override
+  String get pluginSectionUpdates => 'Обновления';
+
+  @override
+  String get pluginAutoUpdate => 'Обновлять автоматически';
+
+  @override
+  String get pluginAutoUpdateDetail =>
+      'Устанавливает новые версии в фоне. Версии, запрашивающие новые разрешения, по-прежнему нужно подтвердить вручную.';
+
+  @override
+  String get pluginAutoUpdateUnsupported =>
+      'Доступно только для плагинов, установленных с GitHub или указавших репозиторий GitHub в plugin.json.';
+
+  @override
+  String pluginAutoUpdatedToast(String name, String version) {
+    return '«$name» обновлён до $version';
+  }
 }

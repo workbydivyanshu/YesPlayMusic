@@ -527,5 +527,92 @@
   "lyricsSearch": "Search",
   "lyricsSaveAsLrc": "Save as .lrc",
   "lyricsSavedToast": "Saved {filename}",
-  "lyricsSaveFailedToast": "Failed to save .lrc"
+  "lyricsSaveFailedToast": "Failed to save .lrc",
+  "actionReplace": "Replace",
+  "@actionReplace": {
+    "description": "Install button when it replaces a different plugin that has the same id"
+  },
+  "pluginIdConflict": "“{name}” is already installed from {source}, a different source with the same id. Replacing it clears its settings, sign-in and granted permissions.",
+  "@pluginIdConflict": {
+    "description": "Install dialog warning: a plugin with the same id from a different source is installed",
+    "placeholders": {
+      "name": {
+        "type": "String"
+      },
+      "source": {
+        "type": "String"
+      }
+    }
+  },
+  "pluginIdConflictUnknown": "“{name}” is already installed with the same id, but it can’t be confirmed to come from the same source. Replacing it clears its settings, sign-in and granted permissions.",
+  "@pluginIdConflictUnknown": {
+    "description": "Install dialog warning: a plugin with the same id is installed and its source is unknown (local folder or placed manually)",
+    "placeholders": {
+      "name": {
+        "type": "String"
+      }
+    }
+  },
+  "pluginCheckUpdate": "Check for Updates",
+  "@pluginCheckUpdate": {
+    "description": "Plugin card menu item: check this plugin for a new Release now"
+  },
+  "pluginUpToDate": "“{name}” is up to date",
+  "@pluginUpToDate": {
+    "description": "Toast after checking: the plugin is already the latest version",
+    "placeholders": {
+      "name": {
+        "type": "String"
+      }
+    }
+  },
+  "pluginUpdateFoundToast": "“{name}” can be updated to {version}",
+  "@pluginUpdateFoundToast": {
+    "description": "Toast after checking: a new version of the plugin is available",
+    "placeholders": {
+      "name": {
+        "type": "String"
+      },
+      "version": {
+        "type": "String"
+      }
+    }
+  },
+  "pluginUpdateCheckFailed": "Couldn’t check for updates: {error}",
+  "@pluginUpdateCheckFailed": {
+    "description": "Toast when the update check could not reach GitHub",
+    "placeholders": {
+      "error": {
+        "type": "String"
+      }
+    }
+  },
+  "pluginSectionUpdates": "Updates",
+  "@pluginSectionUpdates": {
+    "description": "Section title in the plugin settings dialog"
+  },
+  "pluginAutoUpdate": "Update Automatically",
+  "@pluginAutoUpdate": {
+    "description": "Toggle in plugin settings: install new versions in the background"
+  },
+  "pluginAutoUpdateDetail": "Installs new versions in the background. Versions that ask for new permissions still need your confirmation.",
+  "@pluginAutoUpdateDetail": {
+    "description": "Explains the auto update toggle"
+  },
+  "pluginAutoUpdateUnsupported": "Only available for plugins installed from GitHub or with a GitHub repository in plugin.json.",
+  "@pluginAutoUpdateUnsupported": {
+    "description": "Explains why auto update is disabled for non-GitHub plugins"
+  },
+  "pluginAutoUpdatedToast": "Updated “{name}” to {version}",
+  "@pluginAutoUpdatedToast": {
+    "description": "Toast after a plugin was updated in the background",
+    "placeholders": {
+      "name": {
+        "type": "String"
+      },
+      "version": {
+        "type": "String"
+      }
+    }
+  }
 }

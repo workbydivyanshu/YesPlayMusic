@@ -584,6 +584,7 @@ class AppState extends ChangeNotifier {
     if (!pluginsLoaded) {
       pluginsLoaded = true;
       _pickStart();
+      _schedulePluginUpdates();
     }
     _leaveMissingTabs();
     _direct.clear();
@@ -716,27 +717,134 @@ class AppState extends ChangeNotifier {
   final Map<String, String> pluginUpdates = {};
   var _pluginUpdatesChecked = false;
 
-  /// 检查从 GitHub 装的插件有没有新的 Release（每次启动查一次）。
+  /// 在后台安装新版本的插件（存在 prefs 里）。
+  Set<String> get autoUpdatePlugins => {
+    for (final x in _prefs()['autoUpdatePlugins'] as List? ?? const []) '$x',
+  };
+
+  void setAutoUpdatePlugin(String id, bool on) {
+    final s = autoUpdatePlugins;
+    on ? s.add(id) : s.remove(id);
+    _savePrefs({'autoUpdatePlugins': s.toList()..sort()});
+    notifyListeners();
+    if (on) _autoUpdatePlugins();
+  }
+
+  /// 检查更新和更新用的链接：prefs 里记下的安装来源，没记时退回 plugin.json
+  /// 里声明的 `repository`。
+  String? pluginUpdateOrigin(String id) {
+    final origin = pluginOrigins[id];
+    if (origin != null && origin.isNotEmpty) return origin;
+    final repo = _manifestOf(id)?.repository ?? '';
+    return repo.isEmpty ? null : repo;
+  }
+
+  /// [id] 能不能检查更新：从 GitHub 仓库或 Release 装的，或在 plugin.json 里
+  /// 声明了 GitHub 仓库。装的是某个分支时没有「新版本」可言。
+  bool canCheckPluginUpdate(String id) {
+    final gh = parseGitHub(pluginUpdateOrigin(id) ?? '');
+    return gh != null && gh.ref == null;
+  }
+
+  /// 已安装插件（运行或停用）的 manifest。
+  PluginManifest? _manifestOf(String id) =>
+      plugins.where((s) => s.id == id).firstOrNull?.manifest ??
+      disabledPlugins.values.where((m) => m.id == id).firstOrNull;
+
+  /// 检查一个插件有没有新的 Release。返回新版本，已是最新时 null。
+  /// GitHub 连不上时抛 [InstallError]。
+  Future<String?> checkPluginUpdate(String id) async {
+    final gh = parseGitHub(pluginUpdateOrigin(id) ?? '');
+    final cur = _manifestOf(id)?.info.version;
+    if (gh == null || gh.ref != null || cur == null) return null;
+    final v = await latestGitHubVersion(gh, strict: true);
+    if (v != null && compareVersions(v, cur) > 0) {
+      pluginUpdates[id] = v;
+    } else {
+      pluginUpdates.remove(id);
+    }
+    notifyListeners();
+    return pluginUpdates[id];
+  }
+
+  /// 检查从 GitHub 装的（或声明了 GitHub 仓库的）插件有没有新的 Release
+  /// （每次启动查一次，除非 [force]），然后安装开了自动更新的。
   Future<void> checkPluginUpdates({bool force = false}) async {
     if (_pluginUpdatesChecked && !force) return;
     _pluginUpdatesChecked = true;
-    final versions = {
-      for (final s in plugins) s.id: s.info.version,
-      for (final m in disabledPlugins.values) m.id: m.info.version,
+    final ids = {
+      for (final s in plugins) s.id,
+      for (final m in disabledPlugins.values) m.id,
     };
-    for (final e in pluginOrigins.entries) {
-      final gh = parseGitHub(e.value);
-      final cur = versions[e.key];
-      // 装的是某个分支时没有「新版本」可言
-      if (gh == null || gh.ref != null || cur == null) continue;
-      final v = await latestGitHubVersion(gh);
-      if (v != null && compareVersions(v, cur) > 0) {
-        pluginUpdates[e.key] = v;
-      } else {
-        pluginUpdates.remove(e.key);
+    for (final id in ids) {
+      if (!canCheckPluginUpdate(id)) continue;
+      try {
+        await checkPluginUpdate(id);
+      } on InstallError catch (e) {
+        debugPrint('[plugin $id] update check failed: $e');
       }
     }
-    notifyListeners();
+    await _autoUpdatePlugins();
+  }
+
+  /// 应用运行期间，开了自动更新的插件多久检查一次。
+  static const _pluginUpdateInterval = Duration(hours: 6);
+  Timer? _pluginUpdateTimer;
+
+  /// 开始后台检查更新：启动片刻后查一次，之后每 [_pluginUpdateInterval] 一次。
+  /// 没有插件开自动更新时不发请求。
+  void _schedulePluginUpdates() {
+    void tick() {
+      if (autoUpdatePlugins.isNotEmpty) checkPluginUpdates(force: true);
+    }
+
+    _pluginUpdateTimer?.cancel();
+    _pluginUpdateTimer = Timer(const Duration(seconds: 10), () {
+      tick();
+      _pluginUpdateTimer = Timer.periodic(_pluginUpdateInterval, (_) => tick());
+    });
+  }
+
+  var _autoUpdating = false;
+
+  /// 安装开了自动更新的插件的可用更新。这几种情况留给用户手动更新：
+  /// 要新权限的版本、要求更新应用版本的，以及正在播放它的歌的插件。
+  Future<void> _autoUpdatePlugins() async {
+    if (_autoUpdating) return;
+    _autoUpdating = true;
+    try {
+      for (final id in autoUpdatePlugins) {
+        final origin = pluginUpdateOrigin(id);
+        final current = _manifestOf(id);
+        if (!pluginUpdates.containsKey(id) || origin == null) continue;
+        if (current == null || (playing && track.ref?.source == id)) continue;
+        PluginPackage? pkg;
+        try {
+          pkg = await fetchPluginPackage(origin);
+          if (pkg.blocked != null ||
+              pkg.manifest.id != id ||
+              pluginIdConflict(pkg) != null ||
+              permissionsGrow(current, pkg.manifest)) {
+            await pkg.discard();
+            continue;
+          }
+          final version = pkg.manifest.info.version;
+          await installPluginPackage(pkg);
+          final s = plugins.where((s) => s.id == id).firstOrNull;
+          showToast(
+            L.pluginAutoUpdatedToast(
+              s?.tr(s.info.name) ?? current.info.name,
+              version,
+            ),
+          );
+        } catch (e) {
+          debugPrint('[plugin $id] auto update failed: $e');
+          await pkg?.discard();
+        }
+      }
+    } finally {
+      _autoUpdating = false;
+    }
   }
 
   /// 下载插件、读出权限和能力，等用户确认。
@@ -746,20 +854,53 @@ class AppState extends ChangeNotifier {
   Future<PluginPackage> fetchPluginFolder(String folder) =>
       fetchPluginFromFolder(folder, pluginsRoot: pluginsDir());
 
-  /// 装好（或更新）确认过的插件并重新加载。
+  /// 已安装插件（运行或停用）的目录；没装时 null。
+  String? _installedDir(String id) => [
+    for (final s in plugins)
+      if (s.id == id) s.dir,
+    for (final e in disabledPlugins.entries)
+      if (e.value.id == id) e.key,
+  ].firstOrNull;
+
+  /// 已装了同 id 但来源不同的插件时，返回那个插件的来源（给用户看的链接；
+  /// 来源不明时为空，比如本地文件夹或手动放进目录的）。没有同 id 的插件，
+  /// 或就是同一个插件（更新）时返回 null。
+  String? pluginIdConflict(PluginPackage pkg) {
+    final id = pkg.manifest.id;
+    if (_installedDir(id) == null) return null;
+    final old = pluginUpdateOrigin(id) ?? '';
+    return sameOrigin(old, pkg.origin) ? null : originLabel(old);
+  }
+
+  /// 装好（或更新）确认过的插件并重新加载。替换同 id 但来源不同的插件
+  /// （[pluginIdConflict]）时按全新安装处理：旧插件的设置、登录状态和已授予的
+  /// 权限都会清掉。
   Future<void> installPluginPackage(PluginPackage pkg) async {
     final id = pkg.manifest.id;
-    final old = [
-      for (final s in plugins)
-        if (s.id == id) s.dir,
-      for (final e in disabledPlugins.entries)
-        if (e.value.id == id) e.key,
-    ].firstOrNull;
+    final old = _installedDir(id);
+    final replace = pluginIdConflict(pkg) != null;
+    if (replace) {
+      // 先停掉旧插件，免得它在数据目录被删后还往里写
+      await sources.remove(id);
+      try {
+        await Directory(p.join(supportDir(), 'plugin-data', id))
+            .delete(recursive: true);
+      } on FileSystemException {
+        // 没存过东西
+      }
+      _savePrefs({
+        'disabledPlugins': (_disabledIds..remove(id)).toList()..sort(),
+        'allowPrograms': (allowPrograms..remove(id)).toList()..sort(),
+        'autoUpdatePlugins': (autoUpdatePlugins..remove(id)).toList()..sort(),
+      });
+      _dropCache(id);
+    }
     await installPlugin(pkg, pluginsRoot: pluginsDir(), replace: old);
     Analytics.instance.event('plugin_install', {
       'plugin_id': id,
       'plugin_version': pkg.manifest.info.version,
-      'is_update': '${old != null}',
+      'is_update': '${old != null && !replace}',
+      'is_replace': '$replace',
     });
     final origins = pluginOrigins;
     pkg.origin.isEmpty ? origins.remove(id) : origins[id] = pkg.origin;
@@ -788,6 +929,7 @@ class AppState extends ChangeNotifier {
     _savePrefs({
       'disabledPlugins': (_disabledIds..remove(id)).toList()..sort(),
       'allowPrograms': (allowPrograms..remove(id)).toList()..sort(),
+      'autoUpdatePlugins': (autoUpdatePlugins..remove(id)).toList()..sort(),
       'pluginOrigins': pluginOrigins..remove(id),
     });
     pluginUpdates.remove(id);
@@ -3229,6 +3371,7 @@ class AppState extends ChangeNotifier {
     mcp.stop(notify: false);
     _trimTimer?.cancel();
     _refreshTimer?.cancel();
+    _pluginUpdateTimer?.cancel();
     _preloadTimer?.cancel();
     _cacheSub?.cancel();
     // 拖完音量半秒内退出：把还没写的音量写掉

@@ -1797,4 +1797,54 @@ class AppLocalizationsDe extends AppLocalizations {
 
   @override
   String get lyricsSaveFailedToast => 'Fehler beim Speichern der .lrc-Datei';
+
+  @override
+  String get actionReplace => 'Ersetzen';
+
+  @override
+  String pluginIdConflict(String name, String source) {
+    return '„$name“ ist bereits aus $source installiert – eine andere Quelle mit derselben ID. Beim Ersetzen werden seine Einstellungen, Anmeldung und erteilten Berechtigungen gelöscht.';
+  }
+
+  @override
+  String pluginIdConflictUnknown(String name) {
+    return '„$name“ ist bereits mit derselben ID installiert, aber es lässt sich nicht bestätigen, dass es aus derselben Quelle stammt. Beim Ersetzen werden seine Einstellungen, Anmeldung und erteilten Berechtigungen gelöscht.';
+  }
+
+  @override
+  String get pluginCheckUpdate => 'Nach Updates suchen';
+
+  @override
+  String pluginUpToDate(String name) {
+    return '„$name“ ist aktuell';
+  }
+
+  @override
+  String pluginUpdateFoundToast(String name, String version) {
+    return '„$name“ kann auf $version aktualisiert werden';
+  }
+
+  @override
+  String pluginUpdateCheckFailed(String error) {
+    return 'Suche nach Updates fehlgeschlagen: $error';
+  }
+
+  @override
+  String get pluginSectionUpdates => 'Updates';
+
+  @override
+  String get pluginAutoUpdate => 'Automatisch aktualisieren';
+
+  @override
+  String get pluginAutoUpdateDetail =>
+      'Installiert neue Versionen im Hintergrund. Versionen, die neue Berechtigungen anfordern, musst du weiterhin selbst bestätigen.';
+
+  @override
+  String get pluginAutoUpdateUnsupported =>
+      'Nur verfügbar für Plugins, die von GitHub installiert wurden oder ein GitHub-Repository in plugin.json angeben.';
+
+  @override
+  String pluginAutoUpdatedToast(String name, String version) {
+    return '„$name“ wurde auf $version aktualisiert';
+  }
 }

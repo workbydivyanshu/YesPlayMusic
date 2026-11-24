@@ -31,6 +31,7 @@ class PluginManifest {
     this.description = '',
     this.author = '',
     this.icon = '',
+    this.repository = '',
     this.raw = const {},
   });
 
@@ -44,6 +45,9 @@ class PluginManifest {
 
   /// 插件图标，插件目录里的 .png/.jpg/.webp 相对路径；不写就用名字首字母。
   final String icon;
+
+  /// 可选的 GitHub 仓库地址，没记录安装来源时用来检查更新。
+  final String repository;
 
   /// 原始 JSON，传给插件 isolate 用。
   final Map<String, Object?> raw;
@@ -118,6 +122,11 @@ class PluginManifest {
         _ => '',
       },
       icon: icon.isEmpty ? '' : p.normalize(icon),
+      repository: switch (j['repository']) {
+        final String r => r.trim(),
+        {'url': final String r} => r.trim(),
+        _ => '',
+      },
       raw: j,
     );
   }

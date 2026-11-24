@@ -124,6 +124,35 @@ GitHubRef? parseGitHub(String input) {
   return null;
 }
 
+/// 两个安装链接是不是同一个插件：同一个 GitHub 仓库（任意分支、Release 或路径），
+/// 否则同一个链接。两个本地文件夹安装（都为空）算同一个。
+bool sameOrigin(String a, String b) {
+  if (a == b) return true;
+  final ga = parseGitHub(a), gb = parseGitHub(b);
+  return ga != null &&
+      gb != null &&
+      ga.slug.toLowerCase() == gb.slug.toLowerCase();
+}
+
+/// 给用户看的安装链接：github.com/owner/repo，或链接的主机和路径。空保持为空。
+String originLabel(String origin) {
+  if (origin.isEmpty) return '';
+  final gh = parseGitHub(origin);
+  if (gh != null) return 'github.com/${gh.slug}';
+  final u = Uri.tryParse(origin);
+  return u == null || u.host.isEmpty ? origin : '${u.host}${u.path}';
+}
+
+/// [next] 是否要了 [current] 没有的权限：新的网络主机或程序。这样的更新必须
+/// 用户确认，所以永远不会自动安装。
+bool permissionsGrow(PluginManifest current, PluginManifest next) {
+  final hosts = current.network.toSet(), programs = current.process.toSet();
+  final net = !hosts.contains('*') && next.network.any((h) => !hosts.contains(h));
+  final proc =
+      !programs.contains('*') && next.process.any((x) => !programs.contains(x));
+  return net || proc;
+}
+
 const _maxBytes = 50 * 1024 * 1024;
 
 /// 解压后的总大小和文件数上限，防 zip 炸弹。
@@ -229,7 +258,8 @@ Future<String> installPlugin(
 }
 
 /// GitHub 仓库最新 Release 的版本号（去掉 v）；没有 Release 或查不到时 null。
-Future<String?> latestGitHubVersion(GitHubRef gh) async {
+/// [strict] 时请求失败会抛 [InstallError]，而不是返回 null。
+Future<String?> latestGitHubVersion(GitHubRef gh, {bool strict = false}) async {
   final http = _client();
   try {
     final j = await _json(
@@ -239,7 +269,8 @@ Future<String?> latestGitHubVersion(GitHubRef gh) async {
     );
     final tag = '${j?['tag_name'] ?? ''}';
     return tag.isEmpty ? null : tag.replaceFirst(RegExp(r'^v'), '');
-  } catch (_) {
+  } catch (e) {
+    if (strict) throw e is InstallError ? e : InstallError('$e');
     return null;
   } finally {
     http.close(force: true);
