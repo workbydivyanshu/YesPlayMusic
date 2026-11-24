@@ -68,6 +68,8 @@ Sync by inspecting upstream diffs and adapting relevant, verified hunks cleanly 
 | **Wave 04** | `33316a7`, `35e8ed6`, `89c5489` | Aubade multi-source lyrics engine (6 providers, sanitizers, LRU cache, word-sync race), persistent timing offset, lyrics control popover, plain lyrics fallback |
 | **Hardening** | `241b5b4`, `1373a9a`, `3d3e337`, `c5ad2f6` | English docs & localization, AppRun variable fix, sidebar logo in-app navigation, complete Google Analytics telemetry purge |
 | **Audit & Fix** | `6c2be7d`, `6a7334a`, `957dd7c` | Window workarea clamp on monitor disconnect, timer use-after-free fix on destroy, 39 regression tests added (291 passed) |
+| **Wave 05** | `9570908`, `e0bc52d`, `60c7fd6` | Symlink security guard on plugin install, dark GTK theme preference & keepRunning channel, settings nav overflow & locale storage sizes |
+| **Wave 06** | `48840dc`, `bdba2fa`, `451ca0e` | Per-folder background isolate scanner with 30s watchdog & cancel, plugin conflict handling & auto-updates, coverflow library tab & mini-lyric persistence (310 tests) |
 
 ---
 
