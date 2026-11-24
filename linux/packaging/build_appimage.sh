@@ -19,11 +19,12 @@ fi
 
 APPDIR="$(mktemp -d)/yesplaymusic.AppDir"
 mkdir -p "$APPDIR/usr/bin" "$APPDIR/usr/lib"
+mkdir -p "$APPDIR/usr/lib/yesplaymusic"
 
 # Binary / libs
 if [ -x "$BUILD_DIR/yesplaymusic" ]; then
   cp -r "$BUILD_DIR"/* "$APPDIR/usr/lib/yesplaymusic/"
-  ln -sf "/usr/lib/yesplaymusic/yesplaymusic" "$APPDIR/usr/bin/yesplaymusic"
+  ln -sf "../lib/yesplaymusic/yesplaymusic" "$APPDIR/usr/bin/yesplaymusic"
 else
   echo "Binary not found at $BUILD_DIR/yesplaymusic" >&2
   exit 1
@@ -47,6 +48,7 @@ chmod +x "$APPDIR/AppRun"
 sed -i 's|^Exec=.*|Exec=yesplaymusic|' "$APPDIR/$APP_NAME.desktop"
 
 OUTPUT="YesPlayMusic-${VERSION}-x86_64.AppImage"
-"$APPIMAGE_TOOL" "$APPDIR" "$OUTPUT_DIR/$OUTPUT"
+export ARCH=x86_64
+"$APPIMAGE_TOOL" --appimage-extract-and-run "$APPDIR" "$OUTPUT_DIR/$OUTPUT"
 
 echo "AppImage built: $OUTPUT_DIR/$OUTPUT"
