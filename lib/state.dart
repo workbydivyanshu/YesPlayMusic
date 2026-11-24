@@ -12,6 +12,9 @@ import 'analytics.dart';
 import 'cover_color.dart';
 import 'data.dart';
 import 'l10n/l10n.dart';
+import 'lyrics/lyrics_models.dart' as lm;
+import 'lyrics/lyrics_repository.dart' as lr;
+import 'lyrics/lyrics_providers.dart' as lp;
 import 'music/local/local_source.dart';
 import 'music/lrc.dart' as lrc;
 import 'cache/audio_cache.dart';
@@ -2821,6 +2824,43 @@ class AppState extends ChangeNotifier {
   List<LyricLine> _lyrics = const [];
   String? _lyricsKey;
 
+  /// 多来源歌词引擎（Apple Music / Lrc.Red / BetterLyrics / Kugou / LRCLIB / Musixmatch）。
+  final lr.LyricsRepository _lyricsRepo = lr.LyricsRepository();
+
+  /// 当前歌词的来源标签（如「Apple Music」「LRCLIB」「Local (.lrc)」），空表示没有。
+  String _lyricsSourceLabel = '';
+
+  /// 当前歌词是否逐字同步。
+  bool _lyricsWordSynced = false;
+
+  /// 纯文本（无时间戳）歌词，用于没有逐行歌词时的可读回退。
+  String _plainLyrics = '';
+
+  /// 手动搜索用的标题/艺人覆盖（空表示用歌曲本身的信息）。
+  String _lyricsManualTitle = '';
+  String _lyricsManualArtist = '';
+
+  /// 「换一个来源」时排除的 provider id。
+  final Set<String> _lyricsExcludes = {};
+
+  /// 每首歌的歌词时间偏移（毫秒），key 为 track.key。持久化在 prefs.json。
+  final Map<String, int> lyricsOffsets = {
+    for (final e in ((_prefs()['lyricsOffsets'] as Map?) ?? const {}).entries)
+      '${e.key}': (e.value as num).toInt(),
+  };
+
+  /// 当前歌曲的歌词来源标签（无歌词时为空）。
+  String get lyricsSourceLabel => _lyricsSourceLabel;
+
+  /// 当前歌词是否逐字同步。
+  bool get lyricsWordSynced => _lyricsWordSynced;
+
+  /// 纯文本歌词（没有逐行时间戳时）。
+  String get plainLyrics => _plainLyrics;
+
+  /// 当前歌曲的歌词偏移（毫秒）。
+  int get currentLyricsOffset => lyricsOffsets[track.key] ?? 0;
+
   /// 当前歌曲的歌词，从来源加载（异步，加载前为空）。
   List<LyricLine> get lyricLines =>
       _lyricsKey == track.key ? _lyrics : const [];
@@ -2858,7 +2898,7 @@ class AppState extends ChangeNotifier {
   int get lyricIndex {
     final ls = lyricLines;
     if (ls.isEmpty) return 0;
-    final ms = (position * 1000).round();
+    final ms = (position * 1000).round() - currentLyricsOffset;
     var lo = 0, hi = ls.length - 1, ans = 0;
     while (lo <= hi) {
       final mid = (lo + hi) >> 1;
@@ -2879,10 +2919,82 @@ class AppState extends ChangeNotifier {
     seek(track.seconds == 0 ? 0 : ls[i].start / 1000 / track.seconds);
   }
 
-  Future<void> _loadLyrics(Track t) async {
+  /// 设置某首歌的歌词偏移（毫秒）。
+  void setLyricsOffset(String trackKey, int offsetMs) {
+    lyricsOffsets[trackKey] = offsetMs;
+    _savePrefs({'lyricsOffsets': lyricsOffsets});
+    notifyListeners();
+  }
+
+  /// 相对调整当前歌曲的歌词偏移。
+  void adjustLyricsOffset(int deltaMs) {
+    setLyricsOffset(track.key, currentLyricsOffset + deltaMs);
+  }
+
+  /// 换一个来源重取歌词（排除当前来源）。
+  void retryLyricsNextSource() {
+    _lyricsExcludes.addAll(
+      lp.retryLyricsExcludingCurrent(
+        currentId: _lyricsSourceLabel.isEmpty
+            ? null
+            : lp.lyricsSourceToProviderId(_lyricsSourceLabel),
+        excludes: _lyricsExcludes,
+      ),
+    );
+    _loadLyrics(track, force: true);
+  }
+
+  /// 用自定义标题/艺人重新搜索歌词。
+  void searchLyricsWithQuery(String title, String artist) {
+    _lyricsManualTitle = title;
+    _lyricsManualArtist = artist;
+    _lyricsExcludes.clear();
+    _loadLyrics(track, force: true);
+  }
+
+  /// 把当前歌词导出为本地 `.lrc`（仅本地曲目）。
+  Future<bool> saveCurrentLyricsAsLrc() async {
+    final ref = track.ref;
+    if (ref == null || ref.source != 'local' || ref.id.isEmpty) return false;
+    final ls = lyricLines;
+    if (ls.isEmpty) return false;
+    String two(int n) => n.toString().padLeft(2, '0');
+    final buf = StringBuffer();
+    for (final l in ls) {
+      final ms = l.start < 0 ? 0 : l.start;
+      final min = ms ~/ 60000;
+      final sec = (ms ~/ 1000) % 60;
+      final hun = ((ms % 1000) / 10).round() % 100;
+      buf.writeln(
+        '[${two(min)}:${two(sec)}.${hun.toString().padLeft(2, '0')}] ${l.text}',
+      );
+    }
+    try {
+      final sidecar = '${p.withoutExtension(ref.id)}.lrc';
+      await File(sidecar).writeAsString(buf.toString().trim());
+      return true;
+    } catch (_) {
+      return false;
+    }
+  }
+
+  /// 把 [lm.LyricsResult] 转成界面的 [LyricLine] 列表。
+  List<LyricLine> _convertLyricsResult(lm.LyricsResult r) {
+    _lyricsSourceLabel = r.source;
+    _lyricsWordSynced = r.isWordSynced;
+    _plainLyrics = r.plainLyrics;
+    if (r.lines.isEmpty) return const [];
+    return [
+      for (final line in r.lines)
+        if (line.text.trim().isNotEmpty)
+          LyricLine(line.text.trim(), '', line.timeMs),
+    ];
+  }
+
+  Future<void> _loadLyrics(Track t, {bool force = false}) async {
     final ref = t.ref;
-    if (ref == null || _lyricsKey == t.key) return;
-    if (_applyCachedLyrics(t)) {
+    if (ref == null || (!force && _lyricsKey == t.key)) return;
+    if (!force && _applyCachedLyrics(t)) {
       notifyListeners();
       return;
     }
@@ -2894,10 +3006,63 @@ class AppState extends ChangeNotifier {
       if (track.key != t.key) return;
       _lyrics = _parseLyrics(l);
       _lyricsKey = t.key;
+      if (_lyrics.isNotEmpty) {
+        _lyricsSourceLabel = ref.source == 'local' ? 'Local (.lrc)' : '';
+        _lyricsWordSynced = false;
+        _plainLyrics = '';
+        notifyListeners();
+        return;
+      }
+    } catch (_) {
+      // 源取歌词失败：继续走多来源引擎
+    }
+    // 源没有歌词：走多来源在线引擎（本地曲目也会匹配在线歌词）。
+    // 测试环境下跳过网络，避免拖慢/卡住测试。
+    if (Platform.environment['FLUTTER_TEST'] == 'true') {
+      if (track.key == t.key && _lyricsKey != t.key) {
+        _lyrics = const [];
+        _lyricsKey = t.key;
+        notifyListeners();
+      }
+      return;
+    }
+    try {
+      final title = _lyricsManualTitle.isNotEmpty
+          ? _lyricsManualTitle
+          : t.title;
+      final artist = _lyricsManualArtist.isNotEmpty
+          ? _lyricsManualArtist
+          : t.artist;
+      final result = await _lyricsRepo
+          .getLyrics(
+            title: title,
+            artist: artist,
+            album: t.album,
+            durationSeconds: t.seconds,
+            filePath: ref.source == 'local' ? ref.id : null,
+            preferredProviderId: _lyricsExcludes.isEmpty ? 'auto' : 'auto',
+            excludeProviderIds: _lyricsExcludes,
+            onPartialResult: (partial) {
+              if (track.key != t.key) return;
+              final converted = _convertLyricsResult(partial);
+              if (converted.isNotEmpty) {
+                _lyrics = converted;
+                _lyricsKey = t.key;
+                notifyListeners();
+              }
+            },
+          )
+          .timeout(
+            const Duration(seconds: 15),
+            onTimeout: () => const lm.LyricsResult.empty(),
+          );
+      if (track.key != t.key) return;
+      final converted = _convertLyricsResult(result);
+      _lyrics = converted;
+      _lyricsKey = t.key;
       notifyListeners();
     } catch (_) {
-      // 歌词不是必需的，加载失败就当没有
-      if (track.key == t.key) {
+      if (track.key == t.key && _lyricsKey != t.key) {
         _lyrics = const [];
         _lyricsKey = t.key;
         notifyListeners();
