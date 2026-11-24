@@ -234,6 +234,60 @@ void main() {
     },
   );
 
+  // 进度统计读过的每个文件；文件夹不存在只当空的，不算读不了。
+  test('reports progress and treats missing folders as empty', () async {
+    final seen = <int>[];
+    final s = LocalSource(
+      folders: [music, p.join(tmp.path, 'nope')],
+      cacheDir: p.join(tmp.path, 'c3'),
+    );
+    await s.scan(onProgress: seen.add);
+    expect(seen, [1, 2, 3]);
+    expect(s.trackCount, 3);
+    expect(s.unreadable, isEmpty);
+  });
+
+  // 列不出来的文件夹会被跳过并报告；其他文件夹照常加载。
+  test('skips unreadable folders', () async {
+    final locked = Directory(p.join(tmp.path, 'locked'))..createSync();
+    wav(p.join(locked.path, 'x.wav'));
+    Process.runSync('chmod', ['000', locked.path]);
+    addTearDown(() => Process.runSync('chmod', ['755', locked.path]));
+    final s = LocalSource(
+      folders: [music, locked.path],
+      cacheDir: p.join(tmp.path, 'c4'),
+    );
+    await s.scan();
+    expect(s.trackCount, 3);
+    expect(s.unreadable, [locked.path]);
+  }, skip: Platform.isWindows ? 'needs POSIX permissions' : null);
+
+  // 一直读不回来（这里用 FIFO 模拟卡住的网络盘）会触发看门狗。
+  test(
+    'skips folders that stop making progress',
+    () async {
+      final stuck = Directory(p.join(tmp.path, 'stuck'))..createSync();
+      Process.runSync('mkfifo', [p.join(stuck.path, 'hang.wav')]);
+      final s = LocalSource(
+        folders: [music, stuck.path],
+        cacheDir: p.join(tmp.path, 'c5'),
+      );
+      await s.scan(stall: const Duration(seconds: 1));
+      expect(s.trackCount, 3);
+      expect(s.unreadable, [stuck.path]);
+    },
+    skip: Platform.isWindows ? 'needs mkfifo' : null,
+    timeout: const Timeout(Duration(seconds: 20)),
+  );
+
+  // 取消会抛异常，旧索引保持不变。
+  test('cancel stops the scan and keeps the old index', () async {
+    final f = src.scan();
+    src.cancelScan();
+    await expectLater(f, throwsA(isA<ScanCancelled>()));
+    expect(src.trackCount, 3);
+  });
+
   // 回归：哈希高位为 1 时，缓存文件名曾带负号。
   test('fnv1a is unsigned fixed-width hex', () {
     for (final k in ['', 'a', 'Bohemian Rhapsody', '晚風']) {

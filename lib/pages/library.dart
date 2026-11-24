@@ -162,7 +162,25 @@ class _LibraryEmpty extends StatelessWidget {
     final app = context.app;
     final l = context.l10n;
     if (app.scanning) {
-      return _emptyAt(_ScanningTitle(l.sourceScanning));
+      return _emptyAt(
+        Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            _ScanningTitle(l.sourceScanning),
+            const SizedBox(height: 12),
+            // 第一个文件出现前也占位，标题才不会跳动
+            Opacity(
+              opacity: app.scanProgress > 0 ? 1 : 0,
+              child: tx(
+                l.countSongs(app.scanProgress),
+                14,
+                w: w500,
+                c: P.muted,
+              ),
+            ),
+          ],
+        ),
+      );
     }
     return _emptyAt(
       EmptyMessage(

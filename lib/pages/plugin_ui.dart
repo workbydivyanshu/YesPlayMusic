@@ -538,10 +538,15 @@ List<({String id, String name})> musicSources(AppState app) => [
       (id: s.id, name: s.tr(s.info.name)),
 ];
 
+/// “正在扫描…”，读到文件后带上数量。
+String scanningLabel(AppState app) => app.scanProgress > 0
+    ? L.sourceScanningCount(app.scanProgress)
+    : L.sourceScanning;
+
 /// 来源名字下面的一行小字。
 ({String text, Color? color}) sourceLine(AppState app, String id) {
   if (id == 'local') {
-    if (app.scanning) return (text: L.sourceScanning, color: null);
+    if (app.scanning) return (text: scanningLabel(app), color: null);
     if (app.musicFolders.isEmpty) return (text: L.sourceNoFolders, color: null);
     return (text: L.countAlbums(app.libraryAlbums.length), color: null);
   }

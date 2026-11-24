@@ -5,6 +5,7 @@
 //   专辑  = 'al:' + 专辑艺人 + '\x01' + 专辑名（都做了大小写折叠）
 //   艺人  = 'ar:' + 艺人名（折叠）
 
+import 'dart:async';
 import 'dart:io';
 import 'dart:isolate';
 
@@ -100,10 +101,51 @@ class LocalSource extends Source {
   List<LocalEntry> get entries => _entries;
   int get trackCount => _entries.length;
 
-  /// 重新扫描所有文件夹。读标签是同步 IO，放到后台 isolate 里做。
-  Future<void> scan() async {
-    final folders = List.of(this.folders), cacheDir = this.cacheDir;
-    final list = await Isolate.run(() => scanFolders(folders, cacheDir));
+  /// 一个文件夹多久没有进展就放弃扫描。列目录、读文件都是同步的，
+  /// 遇到卡住的网络盘（比如 WebDAV）会一直阻塞。
+  static const stallTimeout = Duration(seconds: 30);
+
+  final _cancel = Completer<void>();
+
+  /// 上一次 [scan] 因为读不了或卡住而跳过的文件夹。
+  List<String> unreadable = const [];
+
+  /// 停止正在进行的 [scan]：它会抛 [ScanCancelled]，索引保持原样。
+  void cancelScan() {
+    if (!_cancel.isCompleted) _cancel.complete();
+  }
+
+  /// 重新扫描所有文件夹。读标签是同步 IO，所以每个文件夹都在自己的后台
+  /// isolate 里跑。失败或 [stall] 内没有进展的文件夹会被跳过并记入
+  /// [unreadable]，其余仍会进入索引。[onProgress] 收到已读取的文件数。
+  Future<void> scan({
+    void Function(int files)? onProgress,
+    Duration stall = stallTimeout,
+  }) async {
+    final folders = {for (final f in this.folders) p.normalize(f)};
+    var done = 0;
+    final results = await Future.wait([
+      for (final folder in folders)
+        _scanFolder(folder, cacheDir, stall, _cancel.future, () {
+          onProgress?.call(++done);
+        }),
+    ]);
+    if (_cancel.isCompleted) throw ScanCancelled();
+    final failed = <String>[];
+    final seen = <String>{};
+    final list = <LocalEntry>[];
+    for (final (i, folder) in folders.indexed) {
+      final r = results[i];
+      if (r == null) {
+        failed.add(folder);
+        continue;
+      }
+      for (final e in r) {
+        if (seen.add(e.path)) list.add(e);
+      }
+    }
+    _fillAlbumArtists(list);
+    unreadable = failed;
     _index(list);
   }
 
@@ -330,33 +372,117 @@ class LocalSource extends Source {
 
 // ───────────── 扫描（在后台 isolate 里跑） ─────────────
 
-/// 扫描文件夹，返回所有能识别的音频文件。读不出标签的文件也收录，用文件名兜底。
-List<LocalEntry> scanFolders(List<String> folders, String cacheDir) {
-  final out = <LocalEntry>[];
-  final seen = <String>{};
+/// [LocalSource.scan] 在 [LocalSource.cancelScan] 之后抛出。
+class ScanCancelled implements Exception {}
+
+/// worker → 主 isolate：扫描完成的文件夹。
+class _Done {
+  const _Done(this.entries);
+  final List<LocalEntry> entries;
+}
+
+/// 在自己的 isolate 里扫描一个文件夹。失败或 [stall] 内没有进展时返回 null；
+/// 这时会杀掉 isolate，因为阻塞在 IO 上的调用没法用别的方式打断。
+Future<List<LocalEntry>?> _scanFolder(
+  String folder,
+  String cacheDir,
+  Duration stall,
+  Future<void> cancel,
+  void Function() onFile,
+) async {
+  final port = ReceivePort();
+  final result = Completer<List<LocalEntry>?>();
+  Isolate? iso;
+  Timer? watchdog;
+  void finish(List<LocalEntry>? r) {
+    if (result.isCompleted) return;
+    watchdog?.cancel();
+    port.close();
+    iso?.kill(priority: Isolate.immediate);
+    result.complete(r);
+  }
+
+  void arm() {
+    watchdog?.cancel();
+    watchdog = Timer(stall, () => finish(null));
+  }
+
+  unawaited(cancel.then((_) => finish(null)));
+  arm();
+  port.listen((msg) {
+    switch (msg) {
+      case _Done(:final entries):
+        finish(entries);
+      case 1:
+        onFile();
+        arm();
+      case 0:
+        arm();
+      default:
+        finish(null); // 未捕获的错误（[message, stack] 列表）或没有结果就退出（null）
+    }
+  });
+  try {
+    iso = await Isolate.spawn(
+      _folderWorker,
+      (port.sendPort, folder, cacheDir),
+      onError: port.sendPort,
+      onExit: port.sendPort,
+    );
+    if (result.isCompleted) iso.kill(priority: Isolate.immediate);
+  } catch (_) {
+    finish(null);
+  }
+  return result.future;
+}
+
+/// 在 worker isolate 里运行。每列一个目录发 0，每读一个文件发 1
+/// （两者都会重置看门狗），最后用 [_Done] 带上所有识别到的音频文件。读不出
+/// 标签的文件也收录，用文件名兜底。
+void _folderWorker((SendPort, String, String) args) {
+  final (out, folder, cacheDir) = args;
+  final root = Directory(folder);
+  // 文件夹不存在（比如没插上的移动硬盘或默认目录不存在）就当空的。
+  if (!root.existsSync()) return out.send(const _Done([]));
+  final files = <File>[];
+  _walk(root, files, () => out.send(0), isRoot: true);
+  files.sort((a, b) => a.path.compareTo(b.path));
   final folderCovers = <String, String>{};
   final tagCovers = <String, String>{}; // 专辑键 → 已提取的封面
-  for (final folder in folders) {
-    final dir = Directory(folder);
-    if (!dir.existsSync()) continue;
-    final files =
-        dir
-            .listSync(recursive: true, followLinks: false)
-            .whereType<File>()
-            .where(
-              (f) => audioTypes.containsKey(p.extension(f.path).toLowerCase()),
-            )
-            .where((f) => !p.basename(f.path).startsWith('._')) // macOS 资源分叉文件
-            .toList()
-          ..sort((a, b) => a.path.compareTo(b.path));
-    for (final f in files) {
-      final path = p.normalize(f.absolute.path);
-      if (!seen.add(path)) continue;
-      out.add(_entry(f, path, cacheDir, folderCovers, tagCovers));
+  final entries = <LocalEntry>[];
+  for (final f in files) {
+    final path = p.normalize(f.absolute.path);
+    entries.add(_entry(f, path, cacheDir, folderCovers, tagCovers));
+    out.send(1);
+  }
+  out.send(_Done(entries));
+}
+
+/// 收集 [dir] 下的音频文件。读不了的子文件夹跳过；根目录读不了则抛出。
+void _walk(
+  Directory dir,
+  List<File> out,
+  void Function() onDir, {
+  bool isRoot = false,
+}) {
+  final List<FileSystemEntity> items;
+  try {
+    items = dir.listSync(followLinks: false);
+  } on FileSystemException {
+    if (isRoot) rethrow;
+    return;
+  }
+  onDir();
+  for (final e in items) {
+    if (e is Directory) {
+      _walk(e, out, onDir);
+    } else if (e is File &&
+        audioTypes.containsKey(p.extension(e.path).toLowerCase()) &&
+        // macOS 资源分叉文件
+        !p.basename(e.path).startsWith('._')) {
+      out.add(e);
     }
   }
-  _fillAlbumArtists(out);
-  return out;
 }
 
 /// 同一张专辑所在的文件夹。CD1、Disc 2 这类分碟子文件夹算作上一级，

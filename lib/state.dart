@@ -324,6 +324,16 @@ class AppState extends ChangeNotifier {
   /// 正在扫描本地音乐。扫描期间音乐库为空也不显示空状态，免得启动时闪一下。
   bool scanning = false;
 
+  /// 正在进行的扫描已经读了多少个文件。
+  int scanProgress = 0;
+
+  /// 上一次扫描因为读不了或没有响应而跳过的音乐文件夹。
+  List<String> unreadableFolders = const [];
+
+  /// 每次 [loadLibrary] 都会加一；编号过期的扫描会丢弃自己的结果。
+  int _scanGen = 0;
+  LocalSource? _scanSrc;
+
   /// 本地音乐要扫描的文件夹，存在 prefs 里；没设置过时用 [defaultMusicFolders]。
   late List<String> musicFolders = [
     for (final x
@@ -352,28 +362,55 @@ class AppState extends ChangeNotifier {
 
   /// 空状态里的「重新扫描」：扫完还是空的就提示一下。
   Future<void> rescanLibrary() async {
-    await loadLibrary();
-    if (!hasLibrary) showToast(L.sourceNoMusicFound);
+    if (await loadLibrary() && !hasLibrary) showToast(L.sourceNoMusicFound);
   }
 
+  /// 停止正在进行的扫描；音乐库保留扫描前的内容。
+  void cancelScan() => _scanSrc?.cancelScan();
+
   /// 扫描本地音乐，生成书架；有歌时把播放队列换成第一张专辑（不自动播放）。
-  Future<void> loadLibrary({List<String>? folders}) async {
+  /// 新的调用会取代正在进行的扫描。扫描被取消或被取代时返回 false。
+  Future<bool> loadLibrary({List<String>? folders}) async {
+    final gen = ++_scanGen;
+    _scanSrc?.cancelScan();
     scanning = true;
+    scanProgress = 0;
     notifyListeners();
     try {
-      await _scanLocal(folders);
+      return await _scanLocal(folders, gen);
+    } on ScanCancelled {
+      return false;
     } finally {
-      scanning = false;
-      notifyListeners();
+      if (gen == _scanGen) {
+        _scanSrc = null;
+        scanning = false;
+        notifyListeners();
+      }
     }
   }
 
-  Future<void> _scanLocal(List<String>? folders) async {
+  Future<bool> _scanLocal(List<String>? folders, int gen) async {
     final src = LocalSource(
       folders: folders ?? musicFolders,
       cacheDir: _cacheDir(),
     );
-    await src.scan();
+    _scanSrc = src;
+    final sinceNotify = Stopwatch()..start();
+    await src.scan(
+      onProgress: (n) {
+        scanProgress = n;
+        // 每个文件都重建界面太浪费，200ms 通知一次。
+        if (sinceNotify.elapsedMilliseconds >= 200) {
+          sinceNotify.reset();
+          notifyListeners();
+        }
+      },
+    );
+    if (gen != _scanGen) return false;
+    unreadableFolders = src.unreadable;
+    if (src.unreadable.isNotEmpty) {
+      showToast(L.sourceFoldersUnreadable(src.unreadable.length));
+    }
     if (local != null) await sources.remove(local!.id);
     local = src;
     sources.add(src);
@@ -404,6 +441,7 @@ class AppState extends ChangeNotifier {
       final c = a.artist.toLowerCase().compareTo(b.artist.toLowerCase());
       return c != 0 ? c : a.year.compareTo(b.year);
     });
+    if (gen != _scanGen) return false;
     libraryAlbums = out;
     _libraries.remove('local');
     await CoverColors.instance.preload(out.map((a) => a.cover));
@@ -412,6 +450,7 @@ class AppState extends ChangeNotifier {
       if (!out.any((a) => a.id == shelfId)) shelfId = out.first.id;
     }
     notifyListeners();
+    return true;
   }
 
   // ───── 插件 ─────
