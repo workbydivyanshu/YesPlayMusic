@@ -1,13 +1,13 @@
 import { useEffect, useState } from 'react';
 import Icon from './Icon';
+import { fetchLatestDownloads, links, type Downloads } from '../lib/site';
 
 type Os = 'mac' | 'win' | 'linux';
 type Texts = {
-  title: string; pickOs: string; pickWin: string; pickMac: string; macArm64: string; macIntel: string; setup: string; portable: string; smartscreen: string; linuxNote: string; close: string;
+  title: string; pickOs: string; pickWin: string; pickMac: string; macArm64: string; macIntel: string; setup: string; portable: string; smartscreen: string; linuxNote: string; close: string; latestRelease: string;
   cta: Record<'mac' | 'winSetup' | 'winPortable' | 'linux', string>;
   os: Record<Os, string[]>;
 };
-type Urls = Record<keyof Texts['cta'], string> & { macIntel?: string };
 
 function detect(): Os {
   const p = ((navigator as any).userAgentData?.platform || navigator.platform || navigator.userAgent).toLowerCase();
@@ -17,15 +17,17 @@ function detect(): Os {
 }
 
 // 页面上任何带 data-download 的按钮都会打开这个弹窗
-export default function DownloadModal({ t, urls }: { t: Texts; urls: Urls }) {
+export default function DownloadModal({ t }: { t: Texts }) {
   const [open, setOpen] = useState(false);
   const [os, setOs] = useState<Os>('mac');
   const [pkg, setPkg] = useState<'winSetup' | 'winPortable'>('winSetup');
   const [macArch, setMacArch] = useState<'mac' | 'macIntel'>('mac');
+  const [urls, setUrls] = useState<Downloads | null>(null);
 
   useEffect(() => {
     setOs(detect());
     const onClick = (e: MouseEvent) => {
+      if (e.button !== 0 || e.metaKey || e.ctrlKey || e.shiftKey || e.altKey) return;
       if ((e.target as Element).closest('[data-download]')) { e.preventDefault(); setOpen(true); }
     };
     document.addEventListener('click', onClick);
@@ -40,11 +42,19 @@ export default function DownloadModal({ t, urls }: { t: Texts; urls: Urls }) {
     return () => { document.removeEventListener('keydown', onKey); document.documentElement.style.overflow = ''; };
   }, [open]);
 
+  useEffect(() => {
+    if (!open || urls) return;
+    let active = true;
+    fetchLatestDownloads().then(result => {
+      if (active && result) setUrls(result);
+    });
+    return () => { active = false; };
+  }, [open, urls]);
+
   if (!open) return null;
   const ctaKey = os === 'win' ? pkg : os;
-  const intelUrl = os === 'mac' && macArch === 'macIntel' ? urls.macIntel : undefined;
-  const url = intelUrl ?? urls[ctaKey];
-  const file = url.split('/').pop();
+  const url = os === 'mac' ? urls?.[macArch] : urls?.[ctaKey];
+  const file = url?.split('/').pop();
 
   return (
     <div className="modal-backdrop" onMouseDown={(e) => e.target === e.currentTarget && setOpen(false)}>
@@ -64,7 +74,7 @@ export default function DownloadModal({ t, urls }: { t: Texts; urls: Urls }) {
             </button>
           ))}
         </div>
-        {os === 'mac' && urls.macIntel && (
+        {os === 'mac' && urls?.macIntel && (
           <>
             <p className="modal-label">{t.pickMac}</p>
             <div className="segmented" role="radiogroup" aria-label={t.pickMac}>
@@ -82,15 +92,15 @@ export default function DownloadModal({ t, urls }: { t: Texts; urls: Urls }) {
             </div>
             {pkg === 'winSetup' && <p className="modal-note">{t.smartscreen}</p>}
           </>
-        ) : (
+        ) : file && (
           <div className="file-row">
             <code>{file}</code>
-            <span>{os === 'mac' ? (intelUrl ? t.macIntel : t.macArm64) : t.linuxNote}</span>
+            <span>{os === 'mac' ? (macArch === 'macIntel' ? t.macIntel : t.macArm64) : t.linuxNote}</span>
           </div>
         )}
-        <a className="btn btn-white btn-block" href={url}>
+        <a className="btn btn-white btn-block" href={url ?? links.latestRelease}>
           <Icon name="download" size={20} />
-          {t.cta[ctaKey]}
+          {url ? t.cta[ctaKey] : t.latestRelease}
         </a>
       </div>
     </div>

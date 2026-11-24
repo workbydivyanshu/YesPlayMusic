@@ -76,6 +76,7 @@ const en: typeof zh = {
     smartscreen: 'The installer isn’t code-signed yet. If SmartScreen pops up, click “More info”, then “Run anyway”.',
     linuxNote: 'Needs libmpv: sudo apt install libmpv2',
     close: 'Close',
+    latestRelease: 'View latest release on GitHub',
     cta: { mac: 'Download for Mac', winSetup: 'Download installer', winPortable: 'Download portable', linux: 'Download for Linux' },
     os: { mac: ['macOS', 'macOS 12+'], win: ['Windows', '10 / 11'], linux: ['Linux', 'x64'] },
     pickMac: 'Choose your Mac chip',
