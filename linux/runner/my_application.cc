@@ -148,6 +148,10 @@ static void save_window_state(GtkWindow* window) {
   }
   fprintf(file, "{\n");
   if (maximized) {
+    fprintf(file, "  \"width\": %d,\n", saved_width);
+    fprintf(file, "  \"height\": %d,\n", saved_height);
+    fprintf(file, "  \"x\": %d,\n", saved_x);
+    fprintf(file, "  \"y\": %d,\n", saved_y);
     fprintf(file, "  \"is_maximized\": true\n");
   } else {
     gint width = 0;
@@ -157,6 +161,11 @@ static void save_window_state(GtkWindow* window) {
     gint x = 0;
     gint y = 0;
     gtk_window_get_position(window, &x, &y);
+
+    saved_width = width;
+    saved_height = height;
+    saved_x = x;
+    saved_y = y;
 
     fprintf(file, "  \"width\": %d,\n", width);
     fprintf(file, "  \"height\": %d,\n", height);
