@@ -15,6 +15,7 @@ import '../state.dart';
 import '../theme.dart';
 import '../ui.dart';
 import 'comments.dart';
+import 'common.dart';
 import 'links.dart';
 
 class NowPlayingPage extends StatelessWidget {
@@ -37,7 +38,9 @@ class NowPlayingPage extends StatelessWidget {
     // 只切换下面的内容；上面的歌曲信息不参与切换，免得两份叠在一起闪
     final Widget body;
     if (big) {
-      body = _BigInfo(key: ValueKey('big-${t.key}'), track: t);
+      body = app.plainLyrics.isNotEmpty
+          ? _PlainLyrics(key: ValueKey('plain-${t.key}'), text: app.plainLyrics)
+          : _BigInfo(key: ValueKey('big-${t.key}'), track: t);
     } else if (tab == NpTab.lyrics) {
       body = const Padding(
         key: ValueKey('lyrics'),
@@ -466,6 +469,13 @@ class _TrackInfo extends StatelessWidget {
             hover: white,
             style: ts(13, w: w600, c: wa(0.65)),
           ),
+          if (app.lyricsSourceLabel.isNotEmpty) ...[
+            const SizedBox(height: 8),
+            _SourceBadge(
+              label: app.lyricsSourceLabel,
+              onTap: () => _showLyricsControl(context),
+            ),
+          ],
           const SizedBox(height: 22),
           Container(
             width: 48,
@@ -514,6 +524,64 @@ class _BigInfo extends StatelessWidget {
             ),
           ),
         ],
+      ),
+    );
+  }
+}
+
+/// 没有逐行时间戳时的纯文本歌词：居中、可读、可滚动。
+class _PlainLyrics extends StatelessWidget {
+  const _PlainLyrics({super.key, required this.text});
+  final String text;
+
+  @override
+  Widget build(BuildContext context) {
+    final lines = text.split('\n').where((l) => l.trim().isNotEmpty).toList();
+    return Center(
+      child: SingleChildScrollView(
+        padding: const EdgeInsets.symmetric(horizontal: 40, vertical: 60),
+        child: Column(
+          mainAxisAlignment: MainAxisAlignment.center,
+          crossAxisAlignment: CrossAxisAlignment.center,
+          children: [
+            for (final line in lines)
+              Padding(
+                padding: const EdgeInsets.symmetric(vertical: 6),
+                child: Text(
+                  line.trim(),
+                  textAlign: TextAlign.center,
+                  style: ts(22, w: w700, f: F.semi, c: white),
+                ),
+              ),
+          ],
+        ),
+      ),
+    );
+  }
+}
+
+/// 歌词来源小徽标：点一下打开歌词控制面板。
+class _SourceBadge extends StatelessWidget {
+  const _SourceBadge({required this.label, required this.onTap});
+  final String label;
+  final VoidCallback onTap;
+
+  @override
+  Widget build(BuildContext context) {
+    return Tap(
+      onTap: onTap,
+      builder: (_, h, _) => AnimatedContainer(
+        duration: fast,
+        padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
+        decoration: squircle(
+          999,
+          color: h ? wa(0.22) : wa(0.14),
+          side: BorderSide(color: wa(0.18)),
+        ),
+        child: Text(
+          label,
+          style: ts(13, w: w700, f: F.semi, c: white),
+        ),
       ),
     );
   }
@@ -1368,6 +1436,216 @@ class _Progress extends StatelessWidget {
             },
           );
         },
+      ),
+    );
+  }
+}
+
+// ───────────── 歌词控制面板 ─────────────
+
+/// 打开歌词控制面板（来源切换 / 时间偏移 / 手动搜索 / 导出 lrc）。
+void _showLyricsControl(BuildContext context) {
+  final app = context.app;
+  showDialogCard(
+    context,
+    title: app.lyricsSourceLabel.isEmpty ? '歌词' : app.lyricsSourceLabel,
+    width: 420,
+    body: (close) => _LyricsControlDialog(close: close),
+  );
+}
+
+class _LyricsControlDialog extends StatefulWidget {
+  const _LyricsControlDialog({required this.close});
+  final VoidCallback close;
+
+  @override
+  State<_LyricsControlDialog> createState() => _LyricsControlDialogState();
+}
+
+class _LyricsControlDialogState extends State<_LyricsControlDialog> {
+  late final TextEditingController _title;
+  late final TextEditingController _artist;
+  late final FocusNode _titleFocus;
+  late final FocusNode _artistFocus;
+
+  @override
+  void initState() {
+    super.initState();
+    final t = context.app.track;
+    _title = TextEditingController(text: t.title);
+    _artist = TextEditingController(text: t.artist);
+    _titleFocus = FocusNode();
+    _artistFocus = FocusNode();
+  }
+
+  @override
+  void dispose() {
+    _title.dispose();
+    _artist.dispose();
+    _titleFocus.dispose();
+    _artistFocus.dispose();
+    super.dispose();
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final app = context.app;
+    return ListenableBuilder(
+      listenable: app,
+      builder: (context, _) {
+        final syncLabel = app.lyricsWordSynced
+            ? '逐字同步'
+            : (app.hasLyrics ? '逐行同步' : '纯文本');
+        final isLocal = app.track.ref?.source == 'local';
+        return SingleChildScrollView(
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            crossAxisAlignment: CrossAxisAlignment.stretch,
+            children: [
+              Text(syncLabel, style: ts(14, c: P.muted)),
+              const SizedBox(height: 20),
+              Btn(
+                label: '换一个来源',
+                icon: 'repeat',
+                expand: true,
+                kind: BtnKind.secondary,
+                onTap: () {
+                  app.retryLyricsNextSource();
+                  widget.close();
+                },
+              ),
+              const SizedBox(height: 20),
+              Text(
+                '时间偏移',
+                style: ts(15, w: w700, f: F.semi),
+              ),
+              const SizedBox(height: 8),
+              Row(
+                children: [
+                  _StepBtn(
+                    label: '−',
+                    onTap: () => app.adjustLyricsOffset(-250),
+                  ),
+                  const SizedBox(width: 8),
+                  Expanded(
+                    child: Center(
+                      child: Text(
+                        '偏移: ${(app.currentLyricsOffset / 1000).toStringAsFixed(2)}s',
+                        style: ts(15, c: P.ink, tnum: true),
+                      ),
+                    ),
+                  ),
+                  _StepBtn(
+                    label: '+',
+                    onTap: () => app.adjustLyricsOffset(250),
+                  ),
+                ],
+              ),
+              const SizedBox(height: 8),
+              Align(
+                alignment: Alignment.centerLeft,
+                child: Btn(
+                  label: '重置',
+                  size: BtnSize.s,
+                  kind: BtnKind.secondary,
+                  onTap: () => app.setLyricsOffset(app.track.key, 0),
+                ),
+              ),
+              const SizedBox(height: 20),
+              Text(
+                '手动搜索',
+                style: ts(15, w: w700, f: F.semi),
+              ),
+              const SizedBox(height: 8),
+              _FieldShell(
+                focus: _titleFocus,
+                child: InputBox(
+                  controller: _title,
+                  focusNode: _titleFocus,
+                  placeholder: '标题',
+                ),
+              ),
+              const SizedBox(height: 8),
+              _FieldShell(
+                focus: _artistFocus,
+                child: InputBox(
+                  controller: _artist,
+                  focusNode: _artistFocus,
+                  placeholder: '艺人',
+                ),
+              ),
+              const SizedBox(height: 12),
+              Btn(
+                label: '搜索',
+                icon: 'search',
+                expand: true,
+                kind: BtnKind.primary,
+                onTap: () {
+                  app.searchLyricsWithQuery(_title.text, _artist.text);
+                  widget.close();
+                },
+              ),
+              if (isLocal && app.hasLyrics) ...[
+                const SizedBox(height: 12),
+                Btn(
+                  label: '保存为 .lrc',
+                  icon: 'download',
+                  expand: true,
+                  kind: BtnKind.secondary,
+                  onTap: () async {
+                    final ok = await app.saveCurrentLyricsAsLrc();
+                    if (!context.mounted) return;
+                    showToast(ok ? '已保存 song.lrc' : '保存失败');
+                  },
+                ),
+              ],
+            ],
+          ),
+        );
+      },
+    );
+  }
+}
+
+/// 输入框外壳：点一下聚焦，聚焦时底色变亮。
+class _FieldShell extends StatelessWidget {
+  const _FieldShell({required this.focus, required this.child});
+  final FocusNode focus;
+  final Widget child;
+
+  @override
+  Widget build(BuildContext context) => ListenableBuilder(
+    listenable: focus,
+    builder: (_, _) => GestureDetector(
+      onTap: focus.requestFocus,
+      child: AnimatedContainer(
+        duration: fast,
+        height: 40,
+        padding: const EdgeInsets.symmetric(horizontal: 14),
+        decoration: squircle(20, color: focus.hasFocus ? wa(0.14) : wa(0.08)),
+        alignment: Alignment.centerLeft,
+        child: child,
+      ),
+    ),
+  );
+}
+
+class _StepBtn extends StatelessWidget {
+  const _StepBtn({required this.label, required this.onTap});
+  final String label;
+  final VoidCallback onTap;
+
+  @override
+  Widget build(BuildContext context) {
+    return Tap(
+      onTap: onTap,
+      builder: (_, h, _) => AnimatedContainer(
+        duration: fast,
+        width: 44,
+        height: 36,
+        alignment: Alignment.center,
+        decoration: squircle(10, color: h ? wa(0.16) : wa(0.10)),
+        child: Text(label, style: ts(18, c: white)),
       ),
     );
   }
