@@ -28,8 +28,8 @@ YesPlayMusic 3.0 是用 Flutter 从头重写的桌面音乐播放器。
 
 | 系统              | 文件                                        | 说明                                                                        |
 | ----------------- | ------------------------------------------- | --------------------------------------------------------------------------- |
-| macOS 12+（Apple Silicon） | `YesPlayMusic-<版本>-macos-arm64.dmg` | M 系列芯片，独立 arm64 安装包 |
-| macOS 12+（Intel） | `YesPlayMusic-<版本>-macos-x64.dmg` | Intel 芯片，独立 x86_64 安装包 |
+| macOS 12+（Apple Silicon） | `YesPlayMusic-<版本>-macos.dmg` | M 系列芯片，独立 arm64 安装包 |
+| macOS 12+（Intel） | `YesPlayMusic-<版本>-macos-x64.dmg` | Intel 芯片，3.0.0 未提供此安装包 |
 | Windows 10/11 x64 | `-windows-x64-setup.exe` 或 `-portable.zip` | 安装包没有代码签名，SmartScreen 提示时点「更多信息 → 仍要运行」             |
 | Linux x64         | `-linux-x64.tar.gz`                         | 需要系统装有 libmpv：`sudo apt install libmpv2`（较旧的发行版是 `libmpv1`） |
 

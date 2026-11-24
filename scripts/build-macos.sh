@@ -25,6 +25,14 @@ if [ "$actual_arch" != "$target_arch" ]; then
   echo "架构不符：期望 $target_arch，实际为 $actual_arch" >&2
   exit 1
 fi
+
+find "$app/Contents/Frameworks" -type f -print0 | while IFS= read -r -d '' binary; do
+  if [[ "$(file -b "$binary")" == *Mach-O* ]] && ! lipo "$binary" -verify_arch "$target_arch"; then
+    echo "原生库缺少 $target_arch 架构：$binary" >&2
+    exit 1
+  fi
+done
+
 output="build/macos/packages/$package_arch/YesPlayMusic.app"
 mkdir -p "$(dirname "$output")"
 rm -rf "$output"

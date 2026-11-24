@@ -28,8 +28,8 @@ Download the package for your system from [Releases](https://github.com/qier222/
 
 | System            | File                                          | Notes                                                                                      |
 | ----------------- | --------------------------------------------- | ------------------------------------------------------------------------------------------ |
-| macOS 12+ (Apple Silicon) | `YesPlayMusic-<version>-macos-arm64.dmg` | M-series chips; separate arm64 package |
-| macOS 12+ (Intel) | `YesPlayMusic-<version>-macos-x64.dmg` | Intel chips; separate x86_64 package |
+| macOS 12+ (Apple Silicon) | `YesPlayMusic-<version>-macos.dmg` | M-series chips; separate arm64 package |
+| macOS 12+ (Intel) | `YesPlayMusic-<version>-macos-x64.dmg` | Intel chips; not available in 3.0.0 |
 | Windows 10/11 x64 | `-windows-x64-setup.exe` or `-portable.zip`   | The installer is not code-signed; if SmartScreen warns, click "More info → Run anyway"     |
 | Linux x64         | `-linux-x64.tar.gz`                           | Requires libmpv: `sudo apt install libmpv2` (`libmpv1` on older distributions)             |
 

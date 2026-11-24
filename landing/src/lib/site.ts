@@ -6,8 +6,9 @@ export const repo = 'https://github.com/qier222/YesPlayMusic';
 const base = `${repo}/releases/download/v${version}/YesPlayMusic-${version}`;
 
 export const downloads = {
-  mac: `${base}-macos-arm64.dmg`,
-  macIntel: `${base}-macos-x64.dmg`,
+  mac: `${base}-macos.dmg`,
+  // 3.0.0 没有 Intel 安装包。
+  macIntel: version === '3.0.0' ? undefined : `${base}-macos-x64.dmg`,
   winSetup: `${base}-windows-x64-setup.exe`,
   winPortable: `${base}-windows-x64-portable.zip`,
   linux: `${base}-linux-x64.tar.gz`,

@@ -4,6 +4,8 @@
 
 ## [Unreleased]
 
+- 支持 Intel Mac，提供独立安装包和自动更新。
+
 ## [3.0.0] - 2026-11-24
 
 YesPlayMusic 用 Flutter 重写的第一个版本。

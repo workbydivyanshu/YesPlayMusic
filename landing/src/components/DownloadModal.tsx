@@ -7,7 +7,7 @@ type Texts = {
   cta: Record<'mac' | 'winSetup' | 'winPortable' | 'linux', string>;
   os: Record<Os, string[]>;
 };
-type Urls = Record<'mac' | 'macIntel' | 'winSetup' | 'winPortable' | 'linux', string>;
+type Urls = Record<keyof Texts['cta'], string> & { macIntel?: string };
 
 function detect(): Os {
   const p = ((navigator as any).userAgentData?.platform || navigator.platform || navigator.userAgent).toLowerCase();
@@ -41,9 +41,10 @@ export default function DownloadModal({ t, urls }: { t: Texts; urls: Urls }) {
   }, [open]);
 
   if (!open) return null;
-  const key = os === 'mac' ? macArch : os === 'win' ? pkg : 'linux';
   const ctaKey = os === 'win' ? pkg : os;
-  const file = urls[key].split('/').pop();
+  const intelUrl = os === 'mac' && macArch === 'macIntel' ? urls.macIntel : undefined;
+  const url = intelUrl ?? urls[ctaKey];
+  const file = url.split('/').pop();
 
   return (
     <div className="modal-backdrop" onMouseDown={(e) => e.target === e.currentTarget && setOpen(false)}>
@@ -63,7 +64,7 @@ export default function DownloadModal({ t, urls }: { t: Texts; urls: Urls }) {
             </button>
           ))}
         </div>
-        {os === 'mac' && (
+        {os === 'mac' && urls.macIntel && (
           <>
             <p className="modal-label">{t.pickMac}</p>
             <div className="segmented" role="radiogroup" aria-label={t.pickMac}>
@@ -84,10 +85,10 @@ export default function DownloadModal({ t, urls }: { t: Texts; urls: Urls }) {
         ) : (
           <div className="file-row">
             <code>{file}</code>
-            <span>{os === 'mac' ? (macArch === 'mac' ? t.macArm64 : t.macIntel) : t.linuxNote}</span>
+            <span>{os === 'mac' ? (intelUrl ? t.macIntel : t.macArm64) : t.linuxNote}</span>
           </div>
         )}
-        <a className="btn btn-white btn-block" href={urls[key]}>
+        <a className="btn btn-white btn-block" href={url}>
           <Icon name="download" size={20} />
           {t.cta[ctaKey]}
         </a>
