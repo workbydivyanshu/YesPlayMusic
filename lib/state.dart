@@ -2884,18 +2884,37 @@ class AppState extends ChangeNotifier {
   double get effectiveVolume => muted ? 0 : volume;
 
   // ───── 设置 ─────
-  int swatch = 0;
+  int _swatch = _validSwatch(_prefs()['swatch']) ?? 0;
   String lang = _prefs()['lang'] as String? ?? 'system';
-  bool miniLyric = true;
+  bool _miniLyric = _prefs()['miniLyric'] != false;
   bool tray = false;
 
+  int get swatch => _swatch;
+  bool get miniLyric => _miniLyric;
   Locale? get locale => AppLanguage.byCode(lang).locale;
+
+  static int? _validSwatch(Object? value) =>
+      value is int && value >= 0 && value < swatchesDark.length ? value : null;
+
+  void setSwatch(int index) {
+    if (_validSwatch(index) == null || _swatch == index) return;
+    _swatch = index;
+    _savePrefs({'swatch': _swatch});
+    notifyListeners();
+  }
 
   void setLang(String code) {
     final normalized = AppLanguage.byCode(code).code;
     if (lang == normalized) return;
     lang = normalized;
     _savePrefs({'lang': lang});
+    notifyListeners();
+  }
+
+  void setMiniLyric(bool value) {
+    if (_miniLyric == value) return;
+    _miniLyric = value;
+    _savePrefs({'miniLyric': _miniLyric});
     notifyListeners();
   }
 

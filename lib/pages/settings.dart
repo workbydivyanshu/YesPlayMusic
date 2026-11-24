@@ -377,7 +377,7 @@ class _Appearance extends StatelessWidget {
                   if (i > 0) const SizedBox(width: 6),
                   Tap(
                     tip: swatchNames[i],
-                    onTap: () => app.update(() => app.swatch = i),
+                    onTap: () => app.setSwatch(i),
                     builder: (_, h, _) => AnimatedContainer(
                       duration: const Duration(milliseconds: 150),
                       width: 32,
@@ -487,10 +487,7 @@ class _LyricsCard extends StatelessWidget {
                   c: P.muted,
                 ),
               ),
-              Toggle(
-                value: app.miniLyric,
-                onChanged: (v) => app.update(() => app.miniLyric = v),
-              ),
+              Toggle(value: app.miniLyric, onChanged: app.setMiniLyric),
             ],
           ),
         ),

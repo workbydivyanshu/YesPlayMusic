@@ -11,6 +11,8 @@ import 'package:yesplaymusic/l10n/l10n.dart';
 import 'package:yesplaymusic/shell.dart';
 import 'package:yesplaymusic/state.dart';
 import 'package:yesplaymusic/theme.dart';
+import 'package:yesplaymusic/ui/tap.dart';
+import 'package:yesplaymusic/ui/toggle.dart';
 
 Widget appFor(AppState state) => WidgetsApp(
   color: const Color(0xFF0B0B0D),
@@ -166,6 +168,48 @@ void main() {
   });
 
   testWidgets('设置页各标签', (t) => settingsTabs(t, 1440));
+
+  testWidgets('重启后保留主题色和迷你播放器歌词设置', (t) async {
+    Future<void> openSettings(AppState state) async {
+      state.open('/settings');
+      await _frames(t);
+    }
+
+    final mint = find.byWidgetPredicate((w) => w is Tap && w.tip == '薄荷');
+    final lyricToggle = find.descendant(
+      of: find.ancestor(
+        of: find.text('在迷你播放器显示当前歌词'),
+        matching: find.byWidgetPredicate(
+          (w) => w is Row && w.children.any((child) => child is Toggle),
+        ),
+      ),
+      matching: find.byType(Toggle),
+    );
+    (int, bool) settings(AppState state) =>
+        (state.swatch, t.widget<Toggle>(lyricToggle).value);
+
+    await boot(t, width: 1440);
+    await openSettings(app);
+    expect(settings(app), (0, true));
+
+    await t.tap(mint);
+    await t.tap(lyricToggle);
+    await _frames(t);
+    expect(settings(app), (2, false));
+
+    await t.pumpWidget(const SizedBox.shrink());
+    final restarted = AppState();
+    try {
+      await t.pumpWidget(appFor(restarted));
+      await openSettings(restarted);
+      expect(settings(restarted), (2, false));
+      expect(accent, swatchesDark[2]);
+    } finally {
+      await t.pumpWidget(const SizedBox.shrink());
+      restarted.dispose();
+    }
+  });
+
   testWidgets(
     '设置页各标签（最小窗口）',
     (t) => settingsTabs(t, 1280),
