@@ -467,13 +467,25 @@ class _AlbumsBodyState extends State<_AlbumsBody>
                                 animation: _anim,
                                 builder: (_, _) {
                                   final pos = _anim.value;
+                                  final minVisible = math.max(
+                                    0,
+                                    (pos - 16).floor(),
+                                  );
+                                  final maxVisible = math.min(
+                                    n - 1,
+                                    (pos + 16).ceil(),
+                                  );
                                   final still =
                                       _drag == null && !_anim.isAnimating;
                                   return ClipRect(
                                     child: CustomMultiChildLayout(
                                       delegate: _CenterShelf(n: n, pos: pos),
                                       children: [
-                                        for (var i = 0; i < n; i++)
+                                        for (
+                                          var i = minVisible;
+                                          i <= maxVisible;
+                                          i++
+                                        )
                                           LayoutId(
                                             id: i,
                                             child: FadeIn(
@@ -628,29 +640,47 @@ class _CenterShelf extends MultiChildLayoutDelegate {
 
   @override
   void performLayout(Size size) {
-    final sizes = <Size>[];
+    final sizes = <int, Size>{};
     for (var i = 0; i < n; i++) {
-      sizes.add(layoutChild(i, BoxConstraints.loose(size)));
+      if (!hasChild(i)) continue;
+      sizes[i] = layoutChild(i, BoxConstraints.loose(size));
     }
-    final centers = <double>[];
+
+    final centers = <int, double>{};
     var x = 0.0;
-    for (final sz in sizes) {
-      centers.add(x + sz.width / 2);
+    for (var i = 0; i < n; i++) {
+      if (!hasChild(i)) continue;
+      final sz = sizes[i]!;
+      centers[i] = x + sz.width / 2;
       x += sz.width + 4;
     }
-    // 两端允许拖出去一点（橡皮筋），按最边上那一格外推
-    final double anchor;
-    if (n == 1) {
-      anchor = centers[0] + pos * 48;
+
+    double anchor;
+    if (centers.isEmpty) {
+      anchor = size.width / 2;
+    } else if (centers.length == 1) {
+      final onlyId = centers.keys.first;
+      anchor = centers[onlyId]! + (onlyId - pos).abs() * 48;
     } else {
-      final lo = pos.floor().clamp(0, n - 2);
-      anchor = centers[lo] + (centers[lo + 1] - centers[lo]) * (pos - lo);
+      final visibleIds = centers.keys.toList()..sort();
+      var loIdx = 0;
+      while (loIdx < visibleIds.length - 1 && visibleIds[loIdx + 1] <= pos) {
+        loIdx++;
+      }
+      final loId = visibleIds[loIdx];
+      final hiId = loIdx < visibleIds.length - 1 ? visibleIds[loIdx + 1] : loId;
+      anchor =
+          centers[loId]! +
+          (centers[hiId]! - centers[loId]!) * (pos - loId) / (hiId - loId);
     }
+
     final shift = size.width / 2 - anchor;
     x = 0;
     for (var i = 0; i < n; i++) {
-      positionChild(i, Offset(shift + x, size.height - sizes[i].height));
-      x += sizes[i].width + 4;
+      if (!hasChild(i)) continue;
+      final sz = sizes[i]!;
+      positionChild(i, Offset(shift + x, size.height - sz.height));
+      x += sz.width + 4;
     }
   }
 
