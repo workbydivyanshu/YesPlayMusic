@@ -425,7 +425,13 @@ class AppLocalizationsKo extends AppLocalizations {
   String get settingsMiniLyric => '미니 플레이어에 현재 가사 표시';
 
   @override
-  String get settingsMinimizeToTray => '창을 닫을 때 트레이로 최소화';
+  String get settingsKeepRunning => '창을 닫아도 백그라운드에서 계속 실행';
+
+  @override
+  String get trayShowWindow => '창 표시';
+
+  @override
+  String get trayQuit => '종료';
 
   @override
   String aboutDownloadVersion(String version) {

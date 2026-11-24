@@ -427,8 +427,14 @@ class AppLocalizationsEs extends AppLocalizations {
   String get settingsMiniLyric => 'Mostrar letra actual en el minirreproductor';
 
   @override
-  String get settingsMinimizeToTray =>
-      'Minimizar a la bandeja al cerrar la ventana';
+  String get settingsKeepRunning =>
+      'Seguir en segundo plano al cerrar la ventana';
+
+  @override
+  String get trayShowWindow => 'Mostrar ventana';
+
+  @override
+  String get trayQuit => 'Salir';
 
   @override
   String aboutDownloadVersion(String version) {

@@ -40,12 +40,28 @@ class DragWindow extends StatelessWidget {
   }
 }
 
+/// Tells the native side whether closing the window should keep the app running,
+/// plus the localized tray menu labels (Windows). Only sends when something changed.
+String? _sentWindowPrefs;
+void _syncWindowPrefs(bool keepRunning, AppLocalizations l) {
+  final args = {
+    'keepRunning': keepRunning,
+    'show': l.trayShowWindow,
+    'quit': l.trayQuit,
+  };
+  final key = '$args';
+  if (key == _sentWindowPrefs) return;
+  _sentWindowPrefs = key;
+  _window.invokeMethod('prefs', args).catchError((_) => null);
+}
+
 class Shell extends StatelessWidget {
   const Shell({super.key});
 
   @override
   Widget build(BuildContext context) {
     final app = context.app;
+    _syncWindowPrefs(app.keepRunning, context.l10n);
     final full = app.path.startsWith('/coverflow');
     return Container(
       color: P.ground,

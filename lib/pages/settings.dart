@@ -509,10 +509,10 @@ class _Playback extends StatelessWidget {
         // 音质由各插件在自己的设置里决定，这里不再放
         _row(
           66,
-          context.l10n.settingsMinimizeToTray,
+          context.l10n.settingsKeepRunning,
           Toggle(
-            value: app.tray,
-            onChanged: (v) => app.update(() => app.tray = v),
+            value: app.keepRunning,
+            onChanged: (v) => app.update(() => app.keepRunning = v),
           ),
         ),
       ],

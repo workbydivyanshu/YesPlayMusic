@@ -155,7 +155,9 @@
   "settingsLanguage": "语言",
   "langSystem": "跟随系统",
   "settingsMiniLyric": "在迷你播放器显示当前歌词",
-  "settingsMinimizeToTray": "关闭窗口时最小化到托盘",
+  "settingsKeepRunning": "关闭窗口后在后台继续运行",
+  "trayShowWindow": "显示窗口",
+  "trayQuit": "退出",
 
   "aboutDownloadVersion": "下载 {version}",
   "@aboutDownloadVersion": {

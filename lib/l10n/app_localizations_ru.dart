@@ -427,7 +427,13 @@ class AppLocalizationsRu extends AppLocalizations {
   String get settingsMiniLyric => 'Показывать текст песни в мини-плеере';
 
   @override
-  String get settingsMinimizeToTray => 'Сворачивать в трей при закрытии окна';
+  String get settingsKeepRunning => 'Продолжать работу после закрытия окна';
+
+  @override
+  String get trayShowWindow => 'Показать окно';
+
+  @override
+  String get trayQuit => 'Выход';
 
   @override
   String aboutDownloadVersion(String version) {

@@ -3078,6 +3078,15 @@ class AppState extends ChangeNotifier {
   bool miniLyric = true;
   bool tray = false;
 
+  /// Closing the window hides/minimizes it and keeps the app (and playback) running.
+  /// The native side learns about it through _syncWindowPrefs in shell.dart.
+  bool _keepRunning = _prefs()['keepRunning'] == true;
+  bool get keepRunning => _keepRunning;
+  set keepRunning(bool v) {
+    _keepRunning = v;
+    _savePrefs({'keepRunning': v});
+  }
+
   Locale? get locale => AppLanguage.byCode(lang).locale;
 
   void setLang(String code) {

@@ -145,7 +145,9 @@
   "settingsLanguage": "Langue",
   "langSystem": "Suivre le système",
   "settingsMiniLyric": "Afficher les paroles dans le mini-lecteur",
-  "settingsMinimizeToTray": "Réduire dans la barre d'état à la fermeture",
+  "settingsKeepRunning": "Continuer en arrière-plan après la fermeture",
+  "trayShowWindow": "Afficher la fenêtre",
+  "trayQuit": "Quitter",
 
   "aboutDownloadVersion": "Télécharger {version}",
   "aboutChecking": "Vérification…",

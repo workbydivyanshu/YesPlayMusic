@@ -933,11 +933,23 @@ abstract class AppLocalizations {
   /// **'在迷你播放器显示当前歌词'**
   String get settingsMiniLyric;
 
-  /// No description provided for @settingsMinimizeToTray.
+  /// No description provided for @settingsKeepRunning.
   ///
   /// In zh, this message translates to:
-  /// **'关闭窗口时最小化到托盘'**
-  String get settingsMinimizeToTray;
+  /// **'关闭窗口后在后台继续运行'**
+  String get settingsKeepRunning;
+
+  /// No description provided for @trayShowWindow.
+  ///
+  /// In zh, this message translates to:
+  /// **'显示窗口'**
+  String get trayShowWindow;
+
+  /// No description provided for @trayQuit.
+  ///
+  /// In zh, this message translates to:
+  /// **'退出'**
+  String get trayQuit;
 
   /// No description provided for @aboutDownloadVersion.
   ///
