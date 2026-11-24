@@ -1448,7 +1448,9 @@ void _showLyricsControl(BuildContext context) {
   final app = context.app;
   showDialogCard(
     context,
-    title: app.lyricsSourceLabel.isEmpty ? '歌词' : app.lyricsSourceLabel,
+    title: app.lyricsSourceLabel.isEmpty
+        ? context.l10n.lyricsControlTitle
+        : app.lyricsSourceLabel,
     width: 420,
     body: (close) => _LyricsControlDialog(close: close),
   );
@@ -1490,12 +1492,13 @@ class _LyricsControlDialogState extends State<_LyricsControlDialog> {
   @override
   Widget build(BuildContext context) {
     final app = context.app;
+    final l = context.l10n;
     return ListenableBuilder(
       listenable: app,
       builder: (context, _) {
         final syncLabel = app.lyricsWordSynced
-            ? '逐字同步'
-            : (app.hasLyrics ? '逐行同步' : '纯文本');
+            ? l.lyricsWordSynced
+            : (app.hasLyrics ? l.lyricsLineSynced : l.lyricsPlainText);
         final isLocal = app.track.ref?.source == 'local';
         return SingleChildScrollView(
           child: Column(
@@ -1505,7 +1508,7 @@ class _LyricsControlDialogState extends State<_LyricsControlDialog> {
               Text(syncLabel, style: ts(14, c: P.muted)),
               const SizedBox(height: 20),
               Btn(
-                label: '换一个来源',
+                label: l.lyricsTryAnotherSource,
                 icon: 'repeat',
                 expand: true,
                 kind: BtnKind.secondary,
@@ -1516,7 +1519,7 @@ class _LyricsControlDialogState extends State<_LyricsControlDialog> {
               ),
               const SizedBox(height: 20),
               Text(
-                '时间偏移',
+                l.lyricsTimingOffset,
                 style: ts(15, w: w700, f: F.semi),
               ),
               const SizedBox(height: 8),
@@ -1530,7 +1533,9 @@ class _LyricsControlDialogState extends State<_LyricsControlDialog> {
                   Expanded(
                     child: Center(
                       child: Text(
-                        '偏移: ${(app.currentLyricsOffset / 1000).toStringAsFixed(2)}s',
+                        l.lyricsOffset(
+                          (app.currentLyricsOffset / 1000).toStringAsFixed(2),
+                        ),
                         style: ts(15, c: P.ink, tnum: true),
                       ),
                     ),
@@ -1545,7 +1550,7 @@ class _LyricsControlDialogState extends State<_LyricsControlDialog> {
               Align(
                 alignment: Alignment.centerLeft,
                 child: Btn(
-                  label: '重置',
+                  label: l.lyricsReset,
                   size: BtnSize.s,
                   kind: BtnKind.secondary,
                   onTap: () => app.setLyricsOffset(app.track.key, 0),
@@ -1553,7 +1558,7 @@ class _LyricsControlDialogState extends State<_LyricsControlDialog> {
               ),
               const SizedBox(height: 20),
               Text(
-                '手动搜索',
+                l.lyricsManualSearch,
                 style: ts(15, w: w700, f: F.semi),
               ),
               const SizedBox(height: 8),
@@ -1562,7 +1567,7 @@ class _LyricsControlDialogState extends State<_LyricsControlDialog> {
                 child: InputBox(
                   controller: _title,
                   focusNode: _titleFocus,
-                  placeholder: '标题',
+                  placeholder: l.lyricsTitlePlaceholder,
                 ),
               ),
               const SizedBox(height: 8),
@@ -1571,12 +1576,12 @@ class _LyricsControlDialogState extends State<_LyricsControlDialog> {
                 child: InputBox(
                   controller: _artist,
                   focusNode: _artistFocus,
-                  placeholder: '艺人',
+                  placeholder: l.lyricsArtistPlaceholder,
                 ),
               ),
               const SizedBox(height: 12),
               Btn(
-                label: '搜索',
+                label: l.lyricsSearch,
                 icon: 'search',
                 expand: true,
                 kind: BtnKind.primary,
@@ -1588,14 +1593,18 @@ class _LyricsControlDialogState extends State<_LyricsControlDialog> {
               if (isLocal && app.hasLyrics) ...[
                 const SizedBox(height: 12),
                 Btn(
-                  label: '保存为 .lrc',
+                  label: l.lyricsSaveAsLrc,
                   icon: 'download',
                   expand: true,
                   kind: BtnKind.secondary,
                   onTap: () async {
                     final ok = await app.saveCurrentLyricsAsLrc();
                     if (!context.mounted) return;
-                    showToast(ok ? '已保存 song.lrc' : '保存失败');
+                    showToast(
+                      ok
+                          ? l.lyricsSavedToast('song.lrc')
+                          : l.lyricsSaveFailedToast,
+                    );
                   },
                 ),
               ],

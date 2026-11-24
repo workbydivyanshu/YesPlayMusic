@@ -19,7 +19,7 @@ import 'state.dart';
 import 'system.dart';
 import 'version.dart';
 
-const _repo = 'qier222/YesPlayMusic';
+const _repo = 'workbydivyanshu/YesPlayMusic';
 const _sparkle = bool.fromEnvironment('YPM_SPARKLE');
 
 class Updater extends ChangeNotifier {

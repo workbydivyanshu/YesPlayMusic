@@ -118,15 +118,15 @@ class ImageDiskCache {
         final res = await req.close();
         if (res.statusCode != HttpStatus.ok) {
           await res.drain<void>();
-          throw HttpException('图片下载失败（HTTP ${res.statusCode}）', uri: uri);
+          throw HttpException('Failed to download image (HTTP ${res.statusCode})', uri: uri);
         }
         final b = await consolidateHttpClientResponseBytes(res);
-        if (b.isEmpty) throw HttpException('图片是空的', uri: uri);
+        if (b.isEmpty) throw HttpException('Image data is empty', uri: uri);
         return b;
       }().timeout(_timeout);
     } on TimeoutException {
       req.abort();
-      throw HttpException('图片下载超时', uri: uri);
+      throw HttpException('Image download timed out', uri: uri);
     }
   }
 

@@ -1666,6 +1666,55 @@ class AppLocalizationsZh extends AppLocalizations {
   String sourceErrNotFound(String source) {
     return '找不到源 $source';
   }
+
+  @override
+  String get lyricsControlTitle => '歌词';
+
+  @override
+  String get lyricsWordSynced => '逐字同步';
+
+  @override
+  String get lyricsLineSynced => '逐行同步';
+
+  @override
+  String get lyricsPlainText => '纯文本';
+
+  @override
+  String get lyricsTryAnotherSource => '换一个来源';
+
+  @override
+  String get lyricsTimingOffset => '时间偏移';
+
+  @override
+  String lyricsOffset(String seconds) {
+    return '偏移: ${seconds}s';
+  }
+
+  @override
+  String get lyricsReset => '重置';
+
+  @override
+  String get lyricsManualSearch => '手动搜索';
+
+  @override
+  String get lyricsTitlePlaceholder => '标题';
+
+  @override
+  String get lyricsArtistPlaceholder => '艺人';
+
+  @override
+  String get lyricsSearch => '搜索';
+
+  @override
+  String get lyricsSaveAsLrc => '保存为 .lrc';
+
+  @override
+  String lyricsSavedToast(String filename) {
+    return '已保存 $filename';
+  }
+
+  @override
+  String get lyricsSaveFailedToast => '保存失败';
 }
 
 /// The translations for Chinese, using the Han script (`zh_Hant`).
@@ -3329,4 +3378,53 @@ class AppLocalizationsZhHant extends AppLocalizationsZh {
   String sourceErrNotFound(String source) {
     return '找不到來源 $source';
   }
+
+  @override
+  String get lyricsControlTitle => '歌詞';
+
+  @override
+  String get lyricsWordSynced => '逐字同步';
+
+  @override
+  String get lyricsLineSynced => '逐行同步';
+
+  @override
+  String get lyricsPlainText => '純文字';
+
+  @override
+  String get lyricsTryAnotherSource => '換一個來源';
+
+  @override
+  String get lyricsTimingOffset => '時間偏移';
+
+  @override
+  String lyricsOffset(String seconds) {
+    return '偏移: ${seconds}s';
+  }
+
+  @override
+  String get lyricsReset => '重設';
+
+  @override
+  String get lyricsManualSearch => '手動搜尋';
+
+  @override
+  String get lyricsTitlePlaceholder => '標題';
+
+  @override
+  String get lyricsArtistPlaceholder => '藝人';
+
+  @override
+  String get lyricsSearch => '搜尋';
+
+  @override
+  String get lyricsSaveAsLrc => '儲存為 .lrc';
+
+  @override
+  String lyricsSavedToast(String filename) {
+    return '已儲存 $filename';
+  }
+
+  @override
+  String get lyricsSaveFailedToast => '儲存失敗';
 }

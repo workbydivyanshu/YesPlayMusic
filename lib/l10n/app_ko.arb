@@ -506,5 +506,20 @@
   "pluginErrOpTimeout": "{op} 시간 초과 ({seconds}초)",
   "pluginErrClosed": "플러그인이 종료되었습니다",
   "sourceErrUnsupported": "{name}에서 {op}을(를) 지원하지 않습니다",
-  "sourceErrNotFound": "소스를 찾을 수 없습니다: {source}"
+  "sourceErrNotFound": "소스를 찾을 수 없습니다: {source}",
+  "lyricsControlTitle": "가사",
+  "lyricsWordSynced": "음절 동기화",
+  "lyricsLineSynced": "줄 단위 동기화",
+  "lyricsPlainText": "일반 텍스트",
+  "lyricsTryAnotherSource": "다른 소스 시도",
+  "lyricsTimingOffset": "타이밍 오프셋",
+  "lyricsOffset": "오프셋: {seconds}s",
+  "lyricsReset": "재설정",
+  "lyricsManualSearch": "수동 검색",
+  "lyricsTitlePlaceholder": "제목",
+  "lyricsArtistPlaceholder": "아티스트",
+  "lyricsSearch": "검색",
+  "lyricsSaveAsLrc": ".lrc로 저장",
+  "lyricsSavedToast": "{filename} 저장됨",
+  "lyricsSaveFailedToast": ".lrc 파일 저장 실패"
 }

@@ -506,5 +506,20 @@
   "pluginErrOpTimeout": "Тайм-аут {op} ({seconds} с)",
   "pluginErrClosed": "Плагин закрыт",
   "sourceErrUnsupported": "{name} не поддерживает {op}",
-  "sourceErrNotFound": "Источник не найден: {source}"
+  "sourceErrNotFound": "Источник не найден: {source}",
+  "lyricsControlTitle": "Текст песни",
+  "lyricsWordSynced": "Построчно и пословно",
+  "lyricsLineSynced": "Синхронизация по строкам",
+  "lyricsPlainText": "Простой текст",
+  "lyricsTryAnotherSource": "Выбрать другой источник",
+  "lyricsTimingOffset": "Смещение времени",
+  "lyricsOffset": "Смещение: {seconds}s",
+  "lyricsReset": "Сбросить",
+  "lyricsManualSearch": "Ручной поиск",
+  "lyricsTitlePlaceholder": "Название",
+  "lyricsArtistPlaceholder": "Исполнитель",
+  "lyricsSearch": "Поиск",
+  "lyricsSaveAsLrc": "Сохранить как .lrc",
+  "lyricsSavedToast": "Сохранен {filename}",
+  "lyricsSaveFailedToast": "Не удалось сохранить .lrc"
 }

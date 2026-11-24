@@ -1670,4 +1670,53 @@ class AppLocalizationsKo extends AppLocalizations {
   String sourceErrNotFound(String source) {
     return '소스를 찾을 수 없습니다: $source';
   }
+
+  @override
+  String get lyricsControlTitle => '가사';
+
+  @override
+  String get lyricsWordSynced => '음절 동기화';
+
+  @override
+  String get lyricsLineSynced => '줄 단위 동기화';
+
+  @override
+  String get lyricsPlainText => '일반 텍스트';
+
+  @override
+  String get lyricsTryAnotherSource => '다른 소스 시도';
+
+  @override
+  String get lyricsTimingOffset => '타이밍 오프셋';
+
+  @override
+  String lyricsOffset(String seconds) {
+    return '오프셋: ${seconds}s';
+  }
+
+  @override
+  String get lyricsReset => '재설정';
+
+  @override
+  String get lyricsManualSearch => '수동 검색';
+
+  @override
+  String get lyricsTitlePlaceholder => '제목';
+
+  @override
+  String get lyricsArtistPlaceholder => '아티스트';
+
+  @override
+  String get lyricsSearch => '검색';
+
+  @override
+  String get lyricsSaveAsLrc => '.lrc로 저장';
+
+  @override
+  String lyricsSavedToast(String filename) {
+    return '$filename 저장됨';
+  }
+
+  @override
+  String get lyricsSaveFailedToast => '.lrc 파일 저장 실패';
 }

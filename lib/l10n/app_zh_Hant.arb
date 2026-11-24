@@ -506,5 +506,20 @@
   "pluginErrOpTimeout": "{op} 逾時（{seconds} 秒）",
   "pluginErrClosed": "外掛已關閉",
   "sourceErrUnsupported": "{name} 不支援 {op}",
-  "sourceErrNotFound": "找不到來源 {source}"
+  "sourceErrNotFound": "找不到來源 {source}",
+  "lyricsControlTitle": "歌詞",
+  "lyricsWordSynced": "逐字同步",
+  "lyricsLineSynced": "逐行同步",
+  "lyricsPlainText": "純文字",
+  "lyricsTryAnotherSource": "換一個來源",
+  "lyricsTimingOffset": "時間偏移",
+  "lyricsOffset": "偏移: {seconds}s",
+  "lyricsReset": "重設",
+  "lyricsManualSearch": "手動搜尋",
+  "lyricsTitlePlaceholder": "標題",
+  "lyricsArtistPlaceholder": "藝人",
+  "lyricsSearch": "搜尋",
+  "lyricsSaveAsLrc": "儲存為 .lrc",
+  "lyricsSavedToast": "已儲存 {filename}",
+  "lyricsSaveFailedToast": "儲存失敗"
 }

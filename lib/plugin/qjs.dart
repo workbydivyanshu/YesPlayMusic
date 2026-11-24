@@ -93,7 +93,7 @@ class JsRuntime {
     _q = _qjsNew(0, memoryLimit, stackSize, _cb.nativeFunction);
     if (_q == nullptr) {
       _cb.close();
-      throw StateError('QuickJS 运行时创建失败');
+      throw StateError('Failed to create QuickJS runtime');
     }
   }
 
@@ -131,8 +131,8 @@ class JsRuntime {
   }
 
   T _enter<T>(int budgetMs, T Function() f) {
-    if (disposed) throw StateError('运行时已释放');
-    if (_inside) throw StateError('不能在 host 回调里重入 JS');
+    if (disposed) throw StateError('Runtime already disposed');
+    if (_inside) throw StateError('Cannot re-enter JS from host callback');
     _inside = true;
     _qjsSetBudget(_q, budgetMs);
     try {

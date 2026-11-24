@@ -1068,5 +1068,30 @@
     "placeholders": {
       "source": { "type": "String" }
     }
-  }
+  },
+  "lyricsControlTitle": "歌词",
+  "lyricsWordSynced": "逐字同步",
+  "lyricsLineSynced": "逐行同步",
+  "lyricsPlainText": "纯文本",
+  "lyricsTryAnotherSource": "换一个来源",
+  "lyricsTimingOffset": "时间偏移",
+  "lyricsOffset": "偏移: {seconds}s",
+  "@lyricsOffset": {
+    "placeholders": {
+      "seconds": { "type": "String" }
+    }
+  },
+  "lyricsReset": "重置",
+  "lyricsManualSearch": "手动搜索",
+  "lyricsTitlePlaceholder": "标题",
+  "lyricsArtistPlaceholder": "艺人",
+  "lyricsSearch": "搜索",
+  "lyricsSaveAsLrc": "保存为 .lrc",
+  "lyricsSavedToast": "已保存 {filename}",
+  "@lyricsSavedToast": {
+    "placeholders": {
+      "filename": { "type": "String" }
+    }
+  },
+  "lyricsSaveFailedToast": "保存失败"
 }

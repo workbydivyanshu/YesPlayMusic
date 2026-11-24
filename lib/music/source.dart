@@ -203,7 +203,7 @@ class Sources {
 
   void add(Source s) {
     if (_byId.containsKey(s.id)) {
-      throw StateError('已有 id 为 ${s.id} 的源');
+      throw StateError('Source with id ${s.id} already exists');
     }
     _byId[s.id] = s;
   }

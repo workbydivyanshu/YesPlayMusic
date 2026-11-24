@@ -28,8 +28,8 @@ Future<void> main() async {
   AppLog.captureErrors();
   AppLog.write(
     'I',
-    'YesPlayMusic $appVersion 启动（${Platform.operatingSystem} '
-        '${Platform.operatingSystemVersion}）',
+    'YesPlayMusic $appVersion started (${Platform.operatingSystem} '
+        '${Platform.operatingSystemVersion})',
   );
   // 网络封面等也走系统代理（HttpClient 自己不读 macOS 的代理设置）。
   HttpOverrides.global = _AppHttpOverrides(systemProxy());

@@ -506,5 +506,20 @@
   "pluginErrOpTimeout": "{op} timed out ({seconds}s)",
   "pluginErrClosed": "Plugin is closed",
   "sourceErrUnsupported": "{name} does not support {op}",
-  "sourceErrNotFound": "Source not found: {source}"
+  "sourceErrNotFound": "Source not found: {source}",
+  "lyricsControlTitle": "Lyrics",
+  "lyricsWordSynced": "Syllable synced",
+  "lyricsLineSynced": "Line synced",
+  "lyricsPlainText": "Plain text",
+  "lyricsTryAnotherSource": "Try another source",
+  "lyricsTimingOffset": "Timing offset",
+  "lyricsOffset": "Offset: {seconds}s",
+  "lyricsReset": "Reset",
+  "lyricsManualSearch": "Manual search",
+  "lyricsTitlePlaceholder": "Title",
+  "lyricsArtistPlaceholder": "Artist",
+  "lyricsSearch": "Search",
+  "lyricsSaveAsLrc": "Save as .lrc",
+  "lyricsSavedToast": "Saved {filename}",
+  "lyricsSaveFailedToast": "Failed to save .lrc"
 }

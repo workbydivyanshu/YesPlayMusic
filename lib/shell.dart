@@ -18,10 +18,8 @@ import 'pages/settings.dart';
 import 'pages/sign_in_dialog.dart';
 import 'pages/source_switcher.dart';
 import 'state.dart';
-import 'system.dart';
 import 'theme.dart';
 import 'ui.dart';
-import 'updater.dart';
 
 const _window = MethodChannel('yesplaymusic/window');
 
@@ -306,10 +304,18 @@ class Rail extends StatelessWidget {
             child: Column(
               children: [
                 const SizedBox(height: 92),
-                // 点 logo 打开 GitHub 仓库
+                // 点 logo 导航到主页或音乐库
                 Tap(
-                  tip: 'GitHub',
-                  onTap: () => openExternal(Updater.repoPage),
+                  tip: app.hasHome
+                      ? context.l10n.navHome
+                      : context.l10n.navLibrary,
+                  onTap: () {
+                    if (app.hasHome) {
+                      app.goTab(0);
+                    } else {
+                      app.goTab(2);
+                    }
+                  },
                   builder: (_, _, p) => AnimatedScale(
                     scale: p ? 0.92 : 1,
                     duration: fast,

@@ -506,5 +506,20 @@
   "pluginErrOpTimeout": "Tiempo agotado para {op} ({seconds} s)",
   "pluginErrClosed": "El plugin está cerrado",
   "sourceErrUnsupported": "{name} no admite {op}",
-  "sourceErrNotFound": "No se encontró la fuente {source}"
+  "sourceErrNotFound": "No se encontró la fuente {source}",
+  "lyricsControlTitle": "Letra",
+  "lyricsWordSynced": "Sincronizado por sílabas",
+  "lyricsLineSynced": "Sincronizado por líneas",
+  "lyricsPlainText": "Texto sin formato",
+  "lyricsTryAnotherSource": "Probar otra fuente",
+  "lyricsTimingOffset": "Desfase de tiempo",
+  "lyricsOffset": "Desfase: {seconds}s",
+  "lyricsReset": "Restablecer",
+  "lyricsManualSearch": "Búsqueda manual",
+  "lyricsTitlePlaceholder": "Título",
+  "lyricsArtistPlaceholder": "Artista",
+  "lyricsSearch": "Buscar",
+  "lyricsSaveAsLrc": "Guardar como .lrc",
+  "lyricsSavedToast": "Guardado {filename}",
+  "lyricsSaveFailedToast": "Error al guardar el archivo .lrc"
 }

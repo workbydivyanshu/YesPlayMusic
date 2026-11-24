@@ -1694,4 +1694,53 @@ class AppLocalizationsRu extends AppLocalizations {
   String sourceErrNotFound(String source) {
     return 'Источник не найден: $source';
   }
+
+  @override
+  String get lyricsControlTitle => 'Текст песни';
+
+  @override
+  String get lyricsWordSynced => 'Построчно и пословно';
+
+  @override
+  String get lyricsLineSynced => 'Синхронизация по строкам';
+
+  @override
+  String get lyricsPlainText => 'Простой текст';
+
+  @override
+  String get lyricsTryAnotherSource => 'Выбрать другой источник';
+
+  @override
+  String get lyricsTimingOffset => 'Смещение времени';
+
+  @override
+  String lyricsOffset(String seconds) {
+    return 'Смещение: ${seconds}s';
+  }
+
+  @override
+  String get lyricsReset => 'Сбросить';
+
+  @override
+  String get lyricsManualSearch => 'Ручной поиск';
+
+  @override
+  String get lyricsTitlePlaceholder => 'Название';
+
+  @override
+  String get lyricsArtistPlaceholder => 'Исполнитель';
+
+  @override
+  String get lyricsSearch => 'Поиск';
+
+  @override
+  String get lyricsSaveAsLrc => 'Сохранить как .lrc';
+
+  @override
+  String lyricsSavedToast(String filename) {
+    return 'Сохранен $filename';
+  }
+
+  @override
+  String get lyricsSaveFailedToast => 'Не удалось сохранить .lrc';
 }

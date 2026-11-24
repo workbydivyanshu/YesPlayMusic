@@ -506,5 +506,20 @@
   "pluginErrOpTimeout": "{op} がタイムアウトしました（{seconds} 秒）",
   "pluginErrClosed": "プラグインは終了しています",
   "sourceErrUnsupported": "{name} は {op} に対応していません",
-  "sourceErrNotFound": "ソースが見つかりません：{source}"
+  "sourceErrNotFound": "ソースが見つかりません：{source}",
+  "lyricsControlTitle": "歌詞",
+  "lyricsWordSynced": "文字同期",
+  "lyricsLineSynced": "行同期",
+  "lyricsPlainText": "テキストのみ",
+  "lyricsTryAnotherSource": "別のソースを試す",
+  "lyricsTimingOffset": "タイミングオフセット",
+  "lyricsOffset": "オフセット: {seconds}s",
+  "lyricsReset": "リセット",
+  "lyricsManualSearch": "手動検索",
+  "lyricsTitlePlaceholder": "タイトル",
+  "lyricsArtistPlaceholder": "アーティスト",
+  "lyricsSearch": "検索",
+  "lyricsSaveAsLrc": ".lrc として保存",
+  "lyricsSavedToast": "{filename} を保存しました",
+  "lyricsSaveFailedToast": ".lrc の保存に失敗しました"
 }

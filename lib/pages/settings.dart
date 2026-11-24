@@ -805,7 +805,7 @@ class _StorageState extends State<_Storage> {
 // ───────────── 插件设置页（Sketch 定稿「v31 / 设置 · 插件（卡片）」） ─────────────
 
 const _docsUrl =
-    'https://github.com/qier222/YesPlayMusic/blob/main/docs/plugins.md';
+    'https://github.com/workbydivyanshu/YesPlayMusic/blob/main/docs/plugins.md';
 const _findPluginsUrl =
     'https://github.com/search?q=topic%3Ayesplaymusic-plugin&type=repositories';
 

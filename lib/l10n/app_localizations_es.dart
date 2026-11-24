@@ -1701,4 +1701,53 @@ class AppLocalizationsEs extends AppLocalizations {
   String sourceErrNotFound(String source) {
     return 'No se encontró la fuente $source';
   }
+
+  @override
+  String get lyricsControlTitle => 'Letra';
+
+  @override
+  String get lyricsWordSynced => 'Sincronizado por sílabas';
+
+  @override
+  String get lyricsLineSynced => 'Sincronizado por líneas';
+
+  @override
+  String get lyricsPlainText => 'Texto sin formato';
+
+  @override
+  String get lyricsTryAnotherSource => 'Probar otra fuente';
+
+  @override
+  String get lyricsTimingOffset => 'Desfase de tiempo';
+
+  @override
+  String lyricsOffset(String seconds) {
+    return 'Desfase: ${seconds}s';
+  }
+
+  @override
+  String get lyricsReset => 'Restablecer';
+
+  @override
+  String get lyricsManualSearch => 'Búsqueda manual';
+
+  @override
+  String get lyricsTitlePlaceholder => 'Título';
+
+  @override
+  String get lyricsArtistPlaceholder => 'Artista';
+
+  @override
+  String get lyricsSearch => 'Buscar';
+
+  @override
+  String get lyricsSaveAsLrc => 'Guardar como .lrc';
+
+  @override
+  String lyricsSavedToast(String filename) {
+    return 'Guardado $filename';
+  }
+
+  @override
+  String get lyricsSaveFailedToast => 'Error al guardar el archivo .lrc';
 }

@@ -1691,4 +1691,53 @@ class AppLocalizationsEn extends AppLocalizations {
   String sourceErrNotFound(String source) {
     return 'Source not found: $source';
   }
+
+  @override
+  String get lyricsControlTitle => 'Lyrics';
+
+  @override
+  String get lyricsWordSynced => 'Syllable synced';
+
+  @override
+  String get lyricsLineSynced => 'Line synced';
+
+  @override
+  String get lyricsPlainText => 'Plain text';
+
+  @override
+  String get lyricsTryAnotherSource => 'Try another source';
+
+  @override
+  String get lyricsTimingOffset => 'Timing offset';
+
+  @override
+  String lyricsOffset(String seconds) {
+    return 'Offset: ${seconds}s';
+  }
+
+  @override
+  String get lyricsReset => 'Reset';
+
+  @override
+  String get lyricsManualSearch => 'Manual search';
+
+  @override
+  String get lyricsTitlePlaceholder => 'Title';
+
+  @override
+  String get lyricsArtistPlaceholder => 'Artist';
+
+  @override
+  String get lyricsSearch => 'Search';
+
+  @override
+  String get lyricsSaveAsLrc => 'Save as .lrc';
+
+  @override
+  String lyricsSavedToast(String filename) {
+    return 'Saved $filename';
+  }
+
+  @override
+  String get lyricsSaveFailedToast => 'Failed to save .lrc';
 }

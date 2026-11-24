@@ -2984,6 +2984,96 @@ abstract class AppLocalizations {
   /// In zh, this message translates to:
   /// **'找不到源 {source}'**
   String sourceErrNotFound(String source);
+
+  /// No description provided for @lyricsControlTitle.
+  ///
+  /// In zh, this message translates to:
+  /// **'歌词'**
+  String get lyricsControlTitle;
+
+  /// No description provided for @lyricsWordSynced.
+  ///
+  /// In zh, this message translates to:
+  /// **'逐字同步'**
+  String get lyricsWordSynced;
+
+  /// No description provided for @lyricsLineSynced.
+  ///
+  /// In zh, this message translates to:
+  /// **'逐行同步'**
+  String get lyricsLineSynced;
+
+  /// No description provided for @lyricsPlainText.
+  ///
+  /// In zh, this message translates to:
+  /// **'纯文本'**
+  String get lyricsPlainText;
+
+  /// No description provided for @lyricsTryAnotherSource.
+  ///
+  /// In zh, this message translates to:
+  /// **'换一个来源'**
+  String get lyricsTryAnotherSource;
+
+  /// No description provided for @lyricsTimingOffset.
+  ///
+  /// In zh, this message translates to:
+  /// **'时间偏移'**
+  String get lyricsTimingOffset;
+
+  /// No description provided for @lyricsOffset.
+  ///
+  /// In zh, this message translates to:
+  /// **'偏移: {seconds}s'**
+  String lyricsOffset(String seconds);
+
+  /// No description provided for @lyricsReset.
+  ///
+  /// In zh, this message translates to:
+  /// **'重置'**
+  String get lyricsReset;
+
+  /// No description provided for @lyricsManualSearch.
+  ///
+  /// In zh, this message translates to:
+  /// **'手动搜索'**
+  String get lyricsManualSearch;
+
+  /// No description provided for @lyricsTitlePlaceholder.
+  ///
+  /// In zh, this message translates to:
+  /// **'标题'**
+  String get lyricsTitlePlaceholder;
+
+  /// No description provided for @lyricsArtistPlaceholder.
+  ///
+  /// In zh, this message translates to:
+  /// **'艺人'**
+  String get lyricsArtistPlaceholder;
+
+  /// No description provided for @lyricsSearch.
+  ///
+  /// In zh, this message translates to:
+  /// **'搜索'**
+  String get lyricsSearch;
+
+  /// No description provided for @lyricsSaveAsLrc.
+  ///
+  /// In zh, this message translates to:
+  /// **'保存为 .lrc'**
+  String get lyricsSaveAsLrc;
+
+  /// No description provided for @lyricsSavedToast.
+  ///
+  /// In zh, this message translates to:
+  /// **'已保存 {filename}'**
+  String lyricsSavedToast(String filename);
+
+  /// No description provided for @lyricsSaveFailedToast.
+  ///
+  /// In zh, this message translates to:
+  /// **'保存失败'**
+  String get lyricsSaveFailedToast;
 }
 
 class _AppLocalizationsDelegate

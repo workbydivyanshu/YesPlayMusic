@@ -1670,4 +1670,53 @@ class AppLocalizationsJa extends AppLocalizations {
   String sourceErrNotFound(String source) {
     return 'ソースが見つかりません：$source';
   }
+
+  @override
+  String get lyricsControlTitle => '歌詞';
+
+  @override
+  String get lyricsWordSynced => '文字同期';
+
+  @override
+  String get lyricsLineSynced => '行同期';
+
+  @override
+  String get lyricsPlainText => 'テキストのみ';
+
+  @override
+  String get lyricsTryAnotherSource => '別のソースを試す';
+
+  @override
+  String get lyricsTimingOffset => 'タイミングオフセット';
+
+  @override
+  String lyricsOffset(String seconds) {
+    return 'オフセット: ${seconds}s';
+  }
+
+  @override
+  String get lyricsReset => 'リセット';
+
+  @override
+  String get lyricsManualSearch => '手動検索';
+
+  @override
+  String get lyricsTitlePlaceholder => 'タイトル';
+
+  @override
+  String get lyricsArtistPlaceholder => 'アーティスト';
+
+  @override
+  String get lyricsSearch => '検索';
+
+  @override
+  String get lyricsSaveAsLrc => '.lrc として保存';
+
+  @override
+  String lyricsSavedToast(String filename) {
+    return '$filename を保存しました';
+  }
+
+  @override
+  String get lyricsSaveFailedToast => '.lrc の保存に失敗しました';
 }

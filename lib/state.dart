@@ -599,7 +599,7 @@ class AppState extends ChangeNotifier {
   /// 新的起来后原地换掉：插件卡片、当前音乐源、账号都不会闪一下。
   Future<void> _restartPlugin(PluginSource old) async {
     final gen = _pluginGen;
-    debugPrint('[plugin ${old.id}] 自动重启');
+    debugPrint('[plugin ${old.id}] auto-restarting');
     final PluginSource s;
     try {
       s = await PluginSource.start(
