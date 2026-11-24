@@ -234,6 +234,13 @@ jobs:
           cp linux/packaging/yesplaymusic.desktop linux/packaging/yesplaymusic.png "$DIR/"
           tar -czf "dist/$DIR.tar.gz" "$DIR"
 
+      - name: Package AppImage
+        run: |
+          chmod +x linux/packaging/build_appimage.sh
+          ./linux/packaging/build_appimage.sh
+        env:
+          VERSION: ${{ env.VERSION }}
+
       - uses: actions/upload-artifact@v4
         with:
           name: linux
@@ -267,7 +274,7 @@ jobs:
 
           - macOS：下载 `.dmg`，只支持 Apple Silicon（M 系列芯片）。
           - Windows：下载 `-setup.exe` 安装，或 `-portable.zip` 解压即用。
-          - Linux：下载 `.tar.gz`，需要系统装有 libmpv（Debian / Ubuntu：`sudo apt install libmpv2`，较旧的系统是 `libmpv1`）。
+          - Linux：下载 `.AppImage`（无需安装，直接运行）或 `.tar.gz`（需要系统装有 libmpv，Debian / Ubuntu：`sudo apt install libmpv2`，较旧的系统是 `libmpv1`）。
           EOF
       - name: Update notice for 0.4.x (Electron) users
         # 旧版用 electron-updater 读 releases/latest 里的 latest*.yml，发现新版本就弹窗跳到 Releases 页。
