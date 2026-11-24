@@ -225,6 +225,9 @@ class AppLocalizationsDe extends AppLocalizations {
   String get miniRepeatOff => 'Wiederholen aus';
 
   @override
+  String get miniRepeatOne => 'Eins wiederholen';
+
+  @override
   String get miniQueue => 'Warteschlange';
 
   @override

@@ -165,7 +165,9 @@ void main() {
     app.playQueueAt(2);
     if (!app.repeat) app.toggleRepeat();
     expect(app.nextTrack!.ref!.id, '0');
-    app.toggleRepeat();
+    app.toggleRepeat(); // all → one: same track
+    expect(app.nextTrack!.ref!.id, '2');
+    app.toggleRepeat(); // one → off
     expect(app.nextTrack, isNull);
   });
 }

@@ -225,6 +225,9 @@ class AppLocalizationsFr extends AppLocalizations {
   String get miniRepeatOff => 'Ne pas répéter';
 
   @override
+  String get miniRepeatOne => 'Répéter un';
+
+  @override
   String get miniQueue => 'File d\'attente';
 
   @override

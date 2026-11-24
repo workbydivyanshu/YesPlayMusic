@@ -537,6 +537,9 @@ abstract class AppLocalizations {
   /// **'不循环'**
   String get miniRepeatOff;
 
+  /// No description provided for @miniRepeatOne.
+  String get miniRepeatOne;
+
   /// No description provided for @miniQueue.
   ///
   /// In zh, this message translates to:

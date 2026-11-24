@@ -38,6 +38,8 @@ enum NpTab { lyrics, queue, similar, comments }
 
 enum LyricMode { original, both, trans }
 
+enum RepeatMode { off, all, one }
+
 /// 整个界面的状态：路由、音乐来源、播放器、设置。
 class AppState extends ChangeNotifier {
   AppState() {
@@ -1684,9 +1686,13 @@ class AppState extends ChangeNotifier {
   /// 当前这首；队列为空时是一首空白的歌（界面不显示播放器）。
   Track get track => queue.isEmpty ? Track.none : queue[index];
   @visibleForTesting
-  Track? get nextTrack => index + 1 < queue.length
-      ? queue[index + 1]
-      : (repeat && queue.isNotEmpty ? queue.first : null);
+  Track? get nextTrack {
+    if (index + 1 < queue.length) return queue[index + 1];
+    if (queue.isEmpty) return null;
+    if (repeatMode == RepeatMode.one) return queue[index];
+    if (repeatMode == RepeatMode.all) return queue.first;
+    return null;
+  }
 
   /// 接下来要放的歌。
   List<Track> get upNext => hasQueue ? queue.sublist(index + 1) : const [];
@@ -1721,7 +1727,8 @@ class AppState extends ChangeNotifier {
       queueFrom = j['from'] as String? ?? '';
       _queueName = j['name'] as String? ?? '';
       shuffle = j['shuffle'] == true;
-      repeat = j['repeat'] != false;
+      final savedRepeat = j['repeat'] as bool?;
+      repeatMode = savedRepeat == false ? RepeatMode.off : RepeatMode.all;
       playing = false;
     } catch (e) {
       debugPrint('player: $e');
@@ -1747,7 +1754,7 @@ class AppState extends ChangeNotifier {
       'from': queueFrom,
       'name': _queueName,
       'shuffle': shuffle,
-      'repeat': repeat,
+      'repeat': repeatMode != RepeatMode.off,
     });
     if (text == _playerSaved) return;
     _playerSaved = text;
@@ -1838,7 +1845,10 @@ class AppState extends ChangeNotifier {
   }
 
   bool shuffle = false;
-  bool repeat = true;
+  RepeatMode repeatMode = RepeatMode.all;
+
+  /// Backwards-compatible getter: true when repeat is on (all or one).
+  bool get repeat => repeatMode != RepeatMode.off;
   final Set<String> liked = {};
 
   bool get isLiked => liked.contains(track.key);
@@ -1865,7 +1875,14 @@ class AppState extends ChangeNotifier {
       if (v < position || v - position >= 0.1) position = v;
     };
     e.onCompleted = () {
-      if (_engineOnTrack) next();
+      if (_engineOnTrack) {
+        if (repeatMode == RepeatMode.one) {
+          e.seek(Duration.zero);
+          e.play();
+        } else {
+          next();
+        }
+      }
     };
     e.onError = (msg) => showToast(L.toastPlaybackError(msg));
     e.setVolume(effectiveVolume);
@@ -1891,7 +1908,8 @@ class AppState extends ChangeNotifier {
   Track? get _nextTrack {
     if (queue.isEmpty) return null;
     if (index + 1 < queue.length) return queue[index + 1];
-    if (repeat && queue.length > 1) return queue[0];
+    if (repeatMode == RepeatMode.one) return queue[index]; // same track
+    if (repeatMode == RepeatMode.all && queue.length > 1) return queue[0];
     return null;
   }
 
@@ -2131,7 +2149,9 @@ class AppState extends ChangeNotifier {
   void next() {
     if (queue.isEmpty) return;
     // 电台放到最后一首：等下一批到了再接着放
-    if (index + 1 >= queue.length && station != null && !repeat) {
+    if (index + 1 >= queue.length &&
+        station != null &&
+        repeatMode == RepeatMode.off) {
       _stationStalled = true;
       _topUpStation();
       return;
@@ -2140,7 +2160,7 @@ class AppState extends ChangeNotifier {
     if (index + 1 < queue.length) {
       index++;
       playing = true;
-    } else if (repeat) {
+    } else if (repeatMode == RepeatMode.all) {
       index = 0;
       playing = true;
     } else {
@@ -2648,7 +2668,11 @@ class AppState extends ChangeNotifier {
   }
 
   void toggleRepeat() {
-    repeat = !repeat;
+    repeatMode = switch (repeatMode) {
+      RepeatMode.off => RepeatMode.all,
+      RepeatMode.all => RepeatMode.one,
+      RepeatMode.one => RepeatMode.off,
+    };
     notifyListeners();
     if (playing) _schedulePreloadNext();
   }

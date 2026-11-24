@@ -225,6 +225,9 @@ class AppLocalizationsZh extends AppLocalizations {
   String get miniRepeatOff => '不循环';
 
   @override
+  String get miniRepeatOne => '单曲循环';
+
+  @override
   String get miniQueue => '播放队列';
 
   @override

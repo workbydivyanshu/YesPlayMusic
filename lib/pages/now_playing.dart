@@ -4,7 +4,7 @@ import 'dart:math' as math;
 import 'package:flutter/gestures.dart';
 import 'package:flutter/physics.dart';
 import 'package:flutter/scheduler.dart' show Ticker;
-import 'package:flutter/widgets.dart';
+import 'package:flutter/widgets.dart' hide RepeatMode;
 
 import '../cover_color.dart';
 import '../data.dart';
@@ -1097,11 +1097,13 @@ class _BottomBar extends StatelessWidget {
         const SizedBox(width: 8),
         _CoverSeg(
           icon: 'repeat',
-          tip: app.repeat
-              ? context.l10n.miniRepeatOn
-              : context.l10n.miniRepeatOff,
-          color: app.repeat ? white : wa(0.5),
-          dot: app.repeat,
+          tip: switch (app.repeatMode) {
+            RepeatMode.off => context.l10n.miniRepeatOff,
+            RepeatMode.all => context.l10n.miniRepeatOn,
+            RepeatMode.one => context.l10n.miniRepeatOne,
+          },
+          color: app.repeatMode == RepeatMode.off ? wa(0.5) : white,
+          dot: app.repeatMode == RepeatMode.one,
           onTap: app.toggleRepeat,
         ),
         const SizedBox(width: 8),

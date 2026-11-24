@@ -2,7 +2,7 @@ import 'dart:ui' as ui;
 
 import 'package:flutter/gestures.dart';
 import 'package:flutter/services.dart';
-import 'package:flutter/widgets.dart';
+import 'package:flutter/widgets.dart' hide RepeatMode;
 
 import 'data.dart';
 import 'l10n/l10n.dart';
@@ -546,11 +546,15 @@ class _MiniPlayerState extends State<MiniPlayer> {
                     const SizedBox(width: 6),
                     _IconSeg(
                       icon: 'repeat',
-                      tip: app.repeat
-                          ? context.l10n.miniRepeatOn
-                          : context.l10n.miniRepeatOff,
-                      color: app.repeat ? accent : pal.muted,
-                      dot: app.repeat,
+                      tip: switch (app.repeatMode) {
+                        RepeatMode.off => context.l10n.miniRepeatOff,
+                        RepeatMode.all => context.l10n.miniRepeatOn,
+                        RepeatMode.one => context.l10n.miniRepeatOne,
+                      },
+                      color: app.repeatMode == RepeatMode.off
+                          ? pal.muted
+                          : accent,
+                      dot: app.repeatMode == RepeatMode.one,
                       onDark: onDark,
                       onTap: app.toggleRepeat,
                     ),

@@ -225,6 +225,9 @@ class AppLocalizationsRu extends AppLocalizations {
   String get miniRepeatOff => 'Без повтора';
 
   @override
+  String get miniRepeatOne => 'Повторять один';
+
+  @override
   String get miniQueue => 'Очередь';
 
   @override

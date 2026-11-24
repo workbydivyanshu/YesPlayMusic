@@ -225,6 +225,9 @@ class AppLocalizationsJa extends AppLocalizations {
   String get miniRepeatOff => 'リピートオフ';
 
   @override
+  String get miniRepeatOne => '1曲繰り返し';
+
+  @override
   String get miniQueue => '再生キュー';
 
   @override

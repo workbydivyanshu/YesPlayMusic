@@ -225,6 +225,9 @@ class AppLocalizationsKo extends AppLocalizations {
   String get miniRepeatOff => '반복 끄기';
 
   @override
+  String get miniRepeatOne => '한 곡 반복';
+
+  @override
   String get miniQueue => '재생목록';
 
   @override
