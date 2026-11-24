@@ -1,0 +1,29 @@
+name: Upstream Sync Check
+
+on:
+  schedule:
+    # Run daily at 00:00 UTC
+    - cron: '0 0 * * *'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+  issues: write
+
+jobs:
+  check-upstream:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Run Upstream Sync Checker
+        id: sync_check
+        run: |
+          bash tool/upstream_sync_check.sh | tee sync_report.txt
+          
+          # Write report to GitHub Step Summary
+          echo "## Upstream Sync Report" >> $GITHUB_STEP_SUMMARY
+          cat sync_report.txt >> $GITHUB_STEP_SUMMARY
