@@ -658,20 +658,18 @@ class _CenterShelf extends MultiChildLayoutDelegate {
     double anchor;
     if (centers.isEmpty) {
       anchor = size.width / 2;
-    } else if (centers.length == 1) {
-      final onlyId = centers.keys.first;
-      anchor = centers[onlyId]! + (onlyId - pos).abs() * 48;
     } else {
       final visibleIds = centers.keys.toList()..sort();
-      var loIdx = 0;
-      while (loIdx < visibleIds.length - 1 && visibleIds[loIdx + 1] <= pos) {
-        loIdx++;
+      if (visibleIds.length == 1) {
+        final onlyId = visibleIds.first;
+        anchor = centers[onlyId]! + (onlyId - pos) * 48;
+      } else {
+        final first = visibleIds.first;
+        final last = visibleIds.last;
+        final lo = pos.floor().clamp(first, last - 1);
+        final hi = lo + 1;
+        anchor = centers[lo]! + (centers[hi]! - centers[lo]!) * (pos - lo);
       }
-      final loId = visibleIds[loIdx];
-      final hiId = loIdx < visibleIds.length - 1 ? visibleIds[loIdx + 1] : loId;
-      anchor =
-          centers[loId]! +
-          (centers[hiId]! - centers[loId]!) * (pos - loId) / (hiId - loId);
     }
 
     final shift = size.width / 2 - anchor;
