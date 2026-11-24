@@ -5,7 +5,6 @@ import 'package:flutter/widgets.dart';
 import 'package:file_selector/file_selector.dart';
 import 'package:path/path.dart' as p;
 
-import '../analytics.dart';
 import '../cache/image_cache.dart';
 import '../l10n/l10n.dart';
 import '../log.dart';
@@ -572,13 +571,12 @@ class _About extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final u = Updater.instance;
-    final a = Analytics.instance;
     final l = context.l10n;
     return Container(
       padding: const EdgeInsets.all(24),
       decoration: squircle(24, color: P.surface),
       child: ListenableBuilder(
-        listenable: Listenable.merge([u, a]),
+        listenable: u,
         builder: (context, _) => Column(
           children: [
             _line(
@@ -604,13 +602,6 @@ class _About extends StatelessWidget {
             _line(
               l.aboutAutoCheck,
               Toggle(value: u.autoCheck, onChanged: u.setAutoCheck),
-            ),
-            _gap,
-            _rule(),
-            _gap,
-            _line(
-              l.aboutAnalytics,
-              Toggle(value: a.enabled, onChanged: a.setEnabled),
             ),
             _gap,
             _rule(),
