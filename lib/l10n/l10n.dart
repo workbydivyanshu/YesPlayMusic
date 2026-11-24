@@ -204,10 +204,25 @@ String formatShortCount(int n, Locale locale) {
     if (n >= 10000) return '${one(n / 10000)}만';
     return '$n';
   }
+  if (lang != 'en') {
+    // Other languages use their own abbreviations and decimal separator
+    // (de 1,2 Mio., fr 1,2 M, ru 1,2 млн).
+    return NumberFormat.compact(locale: lang).format(n);
+  }
   if (n >= 1000000000) return '${one(n / 1000000000)}B';
   if (n >= 1000000) return '${one(n / 1000000)}M';
   if (n >= 1000) return '${one(n / 1000)}K';
   return '$n';
+}
+
+/// Storage size such as "1.5 GB" or "320 MB", with the locale's decimal separator.
+String formatBytes(int bytes, Locale locale) {
+  final tag = locale.languageCode;
+  final gb = bytes / (1 << 30);
+  if (gb >= 1) return '${NumberFormat('0.0', tag).format(gb)} GB';
+  final mb = bytes / (1 << 20);
+  final n = mb < 10 ? NumberFormat('0.0', tag).format(mb) : '${mb.round()}';
+  return '$n MB';
 }
 
 /// 列表分隔顿号/逗号（中日文用顿号，其他语言用 ", "）。
