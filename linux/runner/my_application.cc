@@ -235,9 +235,15 @@ static void my_application_activate(GApplication* application) {
     // Clamp the restored position to the current workarea so a window saved
     // on a since-disconnected external monitor doesn't open off-screen.
     GdkRectangle workarea = {0, 0, 0, 0};
-    GdkScreen* screen = gtk_window_get_screen(window);
-    if (screen != nullptr) {
-      gdk_screen_get_workarea(screen, &workarea);
+    GdkDisplay* display = gdk_display_get_default();
+    if (display != nullptr) {
+      GdkMonitor* monitor = gdk_display_get_primary_monitor(display);
+      if (monitor == nullptr) {
+        monitor = gdk_display_get_monitor(display, 0);
+      }
+      if (monitor != nullptr) {
+        gdk_monitor_get_workarea(monitor, &workarea);
+      }
     }
     gint clamped_w = saved_width;
     gint clamped_h = saved_height;
