@@ -3,6 +3,8 @@
 // 支持：一行多个时间戳、[offset:±ms]、增强 LRC 的逐字时间 <mm:ss.xx>、
 // 单独的翻译 LRC，以及同一时间戳出现两次（第二行当翻译）的写法。
 
+import 'dart:math' as math;
+
 import 'package:flutter/foundation.dart';
 
 import 'models.dart';
@@ -43,8 +45,8 @@ List<LyricLine> parseLrc(String lrc) {
       rest = rest.substring(m.end);
     }
     if (stamps.isEmpty) continue;
-    final (text, words) = _words(rest);
     for (final s in stamps) {
+      final (text, words) = _words(rest, s);
       final start = (s - offset).clamp(0, 1 << 31);
       out.add(LyricLine(start: start, text: text, words: _shift(words, -offset)));
     }
@@ -53,10 +55,20 @@ List<LyricLine> parseLrc(String lrc) {
   return out;
 }
 
-(String, List<LyricWord>) _words(String s) {
+(String, List<LyricWord>) _words(String s, int lineStart) {
   final ms = _word.allMatches(s).toList();
   if (ms.isEmpty) return (s.trim(), const []);
   final words = <LyricWord>[];
+  final prefix = s.substring(0, ms.first.start);
+  if (prefix.trim().isNotEmpty) {
+    words.add(
+      LyricWord(
+        start: lineStart,
+        end: math.max(lineStart, _ms(ms.first)),
+        text: prefix,
+      ),
+    );
+  }
   for (var i = 0; i < ms.length; i++) {
     final end = i + 1 < ms.length ? ms[i + 1].start : s.length;
     final text = s.substring(ms[i].end, end);
@@ -118,12 +130,21 @@ List<LyricLine> lyricLines(Lyrics l) {
   ];
 }
 
-/// 翻译时间戳和原文常有几十毫秒误差，就近匹配。
+/// 在 100ms 内找最近的翻译，时间戳相同（平局）时取更早的那条。
+/// [trans] 按时间戳顺序填充。
 String _near(Map<int, String> trans, int start) {
+  var bestDistance = 101;
+  var best = '';
   for (final e in trans.entries) {
-    if ((e.key - start).abs() <= 100) return e.value;
+    final delta = e.key - start;
+    if (delta >= bestDistance) break;
+    final distance = delta.abs();
+    if (distance < bestDistance) {
+      bestDistance = distance;
+      best = e.value;
+    }
   }
-  return '';
+  return best;
 }
 
 /// 某一时刻正在唱的那一行，没有则 -1。
