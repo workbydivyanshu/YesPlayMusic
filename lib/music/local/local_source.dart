@@ -557,10 +557,15 @@ LocalEntry _entry(
   final albumArtist = _clean(m?.albumArtist) ?? '';
 
   final dir = p.dirname(path);
-  var cover = folderCovers.putIfAbsent(dir, () => _folderCover(dir));
+  final albumFolder = albumDir(path);
+  String coverIn(String folder) =>
+      folderCovers.putIfAbsent(folder, () => _folderCover(folder));
+  var cover = coverIn(dir);
+  // 唱片子文件夹（CD1、Disc 2 等）自己没有封面时，退回专辑文件夹的封面。
+  if (cover.isEmpty && albumFolder != dir) cover = coverIn(albumFolder);
   if (cover.isEmpty && m != null && m.pictures.isNotEmpty) {
     // 专辑艺人此时可能还没确定，按文件夹 + 专辑名去重。
-    final key = album.isEmpty ? path : '${albumDir(path)}\x01${fold(album)}';
+    final key = album.isEmpty ? path : '$albumFolder\x01${fold(album)}';
     cover = tagCovers[key] ??= _saveCover(m.pictures, key, cacheDir);
   }
 

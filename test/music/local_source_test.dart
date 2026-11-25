@@ -10,7 +10,12 @@ import 'package:yesplaymusic/music/source.dart';
 /// 写一个 [ms] 毫秒长的静音 WAV（8kHz 单声道 16 位），[info] 写成 RIFF LIST/INFO
 /// 标签（INAM 歌名、IART 艺人、IPRD 专辑、ITRK 曲目号、ICRD 日期）。
 /// 用的标签库只能改写已有的 INFO 块、不能新建，所以这里直接写字节。
-File wav(String path, {int ms = 1000, Map<String, String> info = const {}}) {
+File wav(
+  String path, {
+  int ms = 1000,
+  Map<String, String> info = const {},
+  List<int> cover = const [],
+}) {
   const rate = 8000;
   final b = BytesBuilder();
   void u32(int v) =>
@@ -29,10 +34,42 @@ File wav(String path, {int ms = 1000, Map<String, String> info = const {}}) {
     if (v.length.isOdd) list.addByte(0);
   }
   final listBytes = list.takeBytes();
+  // 内嵌封面写成 ID3 APIC 块，放在音频数据前面。
+  final id3 = BytesBuilder();
+  if (cover.isNotEmpty) {
+    final picture = [0, ...'image/jpeg'.codeUnits, 0, 3, 0, ...cover];
+    id3.add([
+      ...'ID3'.codeUnits,
+      3,
+      0,
+      0,
+      0,
+      0,
+      0,
+      10 + picture.length,
+      ...'APIC'.codeUnits,
+      0,
+      0,
+      0,
+      picture.length,
+      0,
+      0,
+      ...picture,
+    ]);
+  }
+  final id3Bytes = id3.takeBytes();
+  final id3Padding = id3Bytes.length.isOdd ? 1 : 0;
   final data = rate * ms ~/ 1000 * 2;
 
   b.add('RIFF'.codeUnits);
-  u32(4 + (8 + 16) + (info.isEmpty ? 0 : 8 + listBytes.length) + 8 + data);
+  u32(
+    4 +
+        (8 + 16) +
+        (info.isEmpty ? 0 : 8 + listBytes.length) +
+        (cover.isEmpty ? 0 : 8 + id3Bytes.length + id3Padding) +
+        8 +
+        data,
+  );
   b.add('WAVE'.codeUnits);
   b.add('fmt '.codeUnits);
   u32(16);
@@ -46,6 +83,12 @@ File wav(String path, {int ms = 1000, Map<String, String> info = const {}}) {
     b.add('LIST'.codeUnits);
     u32(listBytes.length);
     b.add(listBytes);
+  }
+  if (cover.isNotEmpty) {
+    b.add('ID3 '.codeUnits);
+    u32(id3Bytes.length);
+    b.add(id3Bytes);
+    if (id3Padding != 0) b.addByte(0);
   }
   b.add('data'.codeUnits);
   u32(data);
@@ -123,6 +166,80 @@ void main() {
     expect(page.tracks.map((t) => t.name), ['Kill Bill', 'Snooze']);
     expect(page.tracks.last.duration, inInclusiveRange(1450, 1550));
     expect(page.tracks.every((t) => t.source == 'local'), isTrue);
+  });
+
+  // 分碟子文件夹里的歌，自己没有封面时退回专辑文件夹的封面。
+  test('disc tracks use their own cover or the album folder cover', () async {
+    final albumFolder = p.join(music, 'Multi-disc');
+    for (final folder in ['CD1', 'CD2', 'Disc 3', 'dIsK 4']) {
+      wav(
+        p.join(albumFolder, folder, 'track.wav'),
+        info: {'INAM': folder, 'IPRD': 'Multi-disc'},
+      );
+    }
+    final albumCover = File(p.join(albumFolder, 'cover.png'))
+      ..writeAsBytesSync([0]);
+    final discCover = File(p.join(albumFolder, 'CD1', 'folder.jpg'))
+      ..writeAsBytesSync([0]);
+    await src.scan();
+
+    final album = (await src.search(
+      'Multi-disc',
+      SearchKind.albums,
+    )).albums.single;
+    final tracks = (await src.album(album.id)).tracks;
+    expect(
+      {for (final t in tracks) t.name: t.album.imageUrl},
+      {
+        'CD1': discCover.uri.toString(),
+        'CD2': albumCover.uri.toString(),
+        'Disc 3': albumCover.uri.toString(),
+        'dIsK 4': albumCover.uri.toString(),
+      },
+    );
+  });
+
+  // 非分碟文件夹不往前找，分碟也只找一层（专辑文件夹），不越过父目录。
+  test(
+    'covers do not fall back from non-disc folders or past the parent',
+    () async {
+      final artist = p.join(music, 'Artist');
+      wav(p.join(artist, 'Bonus', 'track.wav'));
+      wav(p.join(artist, 'Album', 'CD1', 'track.wav'));
+      File(p.join(artist, 'cover.png')).writeAsBytesSync([0]);
+      await src.scan();
+
+      final covers = {
+        for (final e in src.entries)
+          if (p.isWithin(artist, e.path))
+            p.basename(p.dirname(e.path)): e.cover,
+      };
+      expect(covers, {'Bonus': '', 'CD1': ''});
+    },
+  );
+
+  // 文件夹封面优先于内嵌封面；子文件夹封面又优先于专辑文件夹封面。
+  test('folder covers take precedence over embedded art', () async {
+    final albumFolder = p.join(music, 'Embedded');
+    const embedded = [0xFF, 0xD8, 0xFF, 0xD9];
+    final track = wav(
+      p.join(albumFolder, 'CD1', 'track.wav'),
+      info: {'INAM': 'Embedded Track', 'IPRD': 'Embedded'},
+      cover: embedded,
+    );
+
+    Future<String> cover() async {
+      await src.scan();
+      return src.entries.singleWhere((e) => e.path == track.path).cover;
+    }
+
+    expect(File(await cover()).readAsBytesSync(), embedded);
+    final albumCover = File(p.join(albumFolder, 'cover.png'))
+      ..writeAsBytesSync([0]);
+    expect(await cover(), albumCover.path);
+    final discCover = File(p.join(albumFolder, 'CD1', 'cover.png'))
+      ..writeAsBytesSync([0]);
+    expect(await cover(), discCover.path);
   });
 
   // 没标签的文件：去掉曲目号前缀，按 "艺人 - 歌名" 拆开，不归入任何专辑。
