@@ -1914,12 +1914,26 @@ class AppState extends ChangeNotifier {
       queueFrom = j['from'] as String? ?? '';
       _queueName = j['name'] as String? ?? '';
       shuffle = j['shuffle'] == true;
+      if (shuffle) _unshuffled = _restoreUnshuffled(j['unshuffled'], ts);
       final savedRepeat = j['repeat'] as bool?;
       repeatMode = savedRepeat == false ? RepeatMode.off : RepeatMode.all;
       playing = false;
     } catch (e) {
       debugPrint('player: $e');
     }
+  }
+
+  List<Track>? _restoreUnshuffled(Object? raw, List<Track> tracks) {
+    if (raw is! List) return null;
+    final seen = <int>{};
+    final original = <Track>[];
+    for (final i in raw) {
+      if (i is! int || i < 0 || i >= tracks.length || !seen.add(i)) {
+        return null;
+      }
+      original.add(tracks[i]);
+    }
+    return original;
   }
 
   /// 状态变了：最多每 2 秒写一次。
@@ -1934,8 +1948,11 @@ class AppState extends ChangeNotifier {
       for (final t in queue)
         if (t.ref != null) t,
     ];
+    final original = _unshuffled;
     final text = jsonEncode({
       'tracks': [for (final t in real) t.ref!.toJson()],
+      if (shuffle && original != null)
+        'unshuffled': _unshuffledIndices(real, original),
       'index': math.max(0, real.indexOf(track)),
       'position': position.floorToDouble(),
       'from': queueFrom,
@@ -1952,6 +1969,18 @@ class AppState extends ChangeNotifier {
     } catch (e) {
       debugPrint('player: $e');
     }
+  }
+
+  List<int> _unshuffledIndices(List<Track> tracks, List<Track> original) {
+    final indices = <Track, List<int>>{};
+    for (var i = tracks.length - 1; i >= 0; i--) {
+      (indices[tracks[i]] ??= []).add(i);
+    }
+    return [
+      for (final t in original)
+        if (indices[t] case final positions? when positions.isNotEmpty)
+          positions.removeLast(),
+    ];
   }
 
   /// 当前队列是从哪里放的：`album:<专辑 id>`、`playlist:<源>/<歌单 id>`、
@@ -2761,15 +2790,27 @@ class AppState extends ChangeNotifier {
   }
 
   void addNext(Track t) {
-    queue.isEmpty ? queue.add(t) : queue.insert(index + 1, t);
+    final entry = _newQueueEntry(t);
+    queue.isEmpty ? queue.add(entry) : queue.insert(index + 1, entry);
     notifyListeners();
     if (playing) _schedulePreloadNext();
   }
 
   void addToQueue(Track t) {
-    queue.add(t);
+    queue.add(_newQueueEntry(t));
     notifyListeners();
     if (playing) _schedulePreloadNext();
+  }
+
+  Track _newQueueEntry(Track t) {
+    if (!queue.contains(t)) return t;
+    return t.copy();
+  }
+
+  void _removeQueueEntryAt(int i) {
+    final removed = queue.removeAt(i);
+    // Songs removed while shuffled must also be removed from the original order, or they'd come back when shuffle is turned off
+    _unshuffled?.remove(removed);
   }
 
   void removeQueueAt(int i) {
@@ -2779,9 +2820,7 @@ class AppState extends ChangeNotifier {
       return;
     }
     final removingCurrent = i == index;
-    final removed = queue.removeAt(i);
-    // 随机期间删掉的歌也要从原顺序里去掉，否则关掉随机时又回来了
-    _unshuffled?.remove(removed);
+    _removeQueueEntryAt(i);
     if (i < index) {
       index--;
     } else if (index >= queue.length) {
@@ -3086,11 +3125,11 @@ class AppState extends ChangeNotifier {
     if (i >= 0 && i == index) {
       next();
       if (index == i + 1) {
-        queue.removeAt(i);
+        _removeQueueEntryAt(i);
         index--;
       }
     } else if (i >= 0) {
-      queue.removeAt(i);
+      _removeQueueEntryAt(i);
       if (i < index) index--;
     }
     notifyListeners();
