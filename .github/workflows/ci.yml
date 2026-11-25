@@ -40,14 +40,11 @@ jobs:
       fail-fast: false
       matrix:
         include:
-          - os: macos
-            runner: macos-latest
           - os: windows
             runner: windows-2022
           - os: linux
             runner: ubuntu-22.04
     runs-on: ${{ matrix.runner }}
-    continue-on-error: ${{ matrix.os == 'macos' }}
     steps:
       - uses: actions/checkout@v4
       - uses: subosito/flutter-action@v2
@@ -61,7 +58,4 @@ jobs:
           sudo apt-get update
           sudo apt-get install -y clang cmake ninja-build pkg-config libgtk-3-dev liblzma-dev libmpv-dev
       - run: flutter pub get
-      - name: Prepare macOS build config
-        if: matrix.os == 'macos'
-        run: flutter build macos --config-only
       - run: flutter build ${{ matrix.os }} --release
