@@ -5,6 +5,20 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 
 ## [Unreleased]
 
+## [3.0.4] - 2026-11-25
+
+### Improvements & Fixes
+
+- **Queue Relaunch Order**: Preserve the unshuffled queue order across relaunches and keep repeated entries as distinct queue items.
+- **Playback Duration Fallback**: Fall back to the engine-reported duration when track metadata is missing and unify all seek paths through a single clamped seek.
+- **Local Lyrics Rescan**: Refresh cached local lyrics after a library rescan and discard stale asynchronous lyric results.
+- **Disc Subfolder Covers**: Inherit album artwork from the parent folder for tracks stored in disc subfolders such as `CD1` or `Disc 2`.
+- **Enhanced LRC Parsing**: Keep prefix text before the first inline timestamp and match the nearest translation cue within 100 ms.
+- **MCP Search Truncation**: Report `more: true` when search results are truncated to the result limit.
+- **Equalizer Scroll Isolation**: Isolate equalizer slider wheel and trackpad gestures so adjusting a band does not scroll the settings page.
+- **Library Year Rail**: Drive the song-list year indicator through a `ValueNotifier` so scrolling does not rebuild the list.
+- **Playlist Card Refresh**: Refresh playlist cards when a playlist changes and exclude the current playlist from the Add to Playlist menu.
+
 ## [3.0.3] - 2026-11-25
 
 ### Improvements & Fixes
@@ -57,6 +71,7 @@ Initial release of YesPlayMusic rewritten in Flutter.
 - Local logging: diagnostic logs written to local storage, accessible in Settings → About.
 - Anonymous analytics: opt-out usage statistics in Settings → About.
 
-[Unreleased]: https://github.com/workbydivyanshu/YesPlayMusic/compare/v3.0.1...HEAD
+[Unreleased]: https://github.com/workbydivyanshu/YesPlayMusic/compare/v3.0.4...HEAD
+[3.0.4]: https://github.com/workbydivyanshu/YesPlayMusic/compare/v3.0.3...v3.0.4
 [3.0.1]: https://github.com/workbydivyanshu/YesPlayMusic/compare/v3.0.0...v3.0.1
 [3.0.0]: https://github.com/workbydivyanshu/YesPlayMusic/releases/tag/v3.0.0
