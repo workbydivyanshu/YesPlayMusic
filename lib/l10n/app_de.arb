@@ -232,6 +232,9 @@
   "pluginEmptyTitle": "Keine Plugins installiert",
   "pluginEmptyHint": "GitHub-Links unterstützt",
   "pluginSettingsTitle": "Plugin-Einstellungen",
+  "pluginTestConnection": "Verbindung testen",
+  "pluginTesting": "Wird getestet …",
+  "pluginTestOk": "Verbunden",
   "pluginSectionAccount": "Konto",
   "pluginSectionCapabilities": "Funktionen",
   "pluginSectionPermissions": "Berechtigungen",
@@ -284,6 +287,7 @@
   "officialLastfmDesc": "Gehörte Titel bei Last.fm scrobbeln",
   "officialListenbrainzDesc": "Bei ListenBrainz oder eigenem Server scrobbeln",
   "officialDiscordDesc": "Zeigt auf Discord, was du hörst",
+  "officialWebdavDesc": "Musik von WebDAV-Servern wie NAS, Nextcloud oder OpenList abspielen",
 
   "capSuggest": "Vorschläge",
   "capLyrics": "Songtexte",

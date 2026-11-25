@@ -40,6 +40,9 @@ class SourceError implements Exception {
 /// 源的全部操作名，也是插件可以导出的函数名。
 abstract final class Op {
   static const signIn = 'signIn', signOut = 'signOut', account = 'account';
+
+  /// Tries the unsaved values in the settings dialog (Test Connection in plugin settings).
+  static const testConnection = 'testConnection';
   static const profile = 'profile';
   static const home = 'home', browse = 'browse';
   static const search = 'search', suggest = 'suggest';
@@ -93,6 +96,11 @@ abstract class Source {
   // ── 设置 ──
   String setting(String key) => '';
   Future<void> setSetting(String key, String value) async => _no('setSetting');
+
+  /// Tries to connect with [settings] (not saved yet). Returns a message for the
+  /// user on success (may be empty); throws [SourceError] on failure.
+  Future<String> testConnection(Map<String, String> settings) async =>
+      _no(Op.testConnection);
 
   // ── 账号 ──
   Future<Account?> signIn() async => _no(Op.signIn);

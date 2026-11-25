@@ -235,6 +235,9 @@
   "pluginEmptyTitle": "No plugins installed",
   "pluginEmptyHint": "Install via GitHub link",
   "pluginSettingsTitle": "Plugin Settings",
+  "pluginTestConnection": "Test Connection",
+  "pluginTesting": "Testing…",
+  "pluginTestOk": "Connected",
   "pluginSectionAccount": "Account",
   "pluginSectionCapabilities": "Capabilities",
   "pluginSectionPermissions": "Permissions",
@@ -287,6 +290,7 @@
   "officialLastfmDesc": "Scrobble what you listen to",
   "officialListenbrainzDesc": "Scrobble to ListenBrainz or a self-hosted server",
   "officialDiscordDesc": "Show what you're listening to on Discord",
+  "officialWebdavDesc": "Play music from WebDAV servers such as a NAS, Nextcloud or OpenList",
 
   "capSuggest": "Suggestions",
   "capLyrics": "Lyrics",
