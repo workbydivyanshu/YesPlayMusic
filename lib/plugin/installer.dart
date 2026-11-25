@@ -143,14 +143,17 @@ String originLabel(String origin) {
   return u == null || u.host.isEmpty ? origin : '${u.host}${u.path}';
 }
 
-/// [next] 是否要了 [current] 没有的权限：新的网络主机或程序。这样的更新必须
-/// 用户确认，所以永远不会自动安装。
+/// [next] 是否要了 [current] 没有的权限：新的网络主机、程序或本机通道。这样的
+/// 更新必须用户确认，所以永远不会自动安装。
 bool permissionsGrow(PluginManifest current, PluginManifest next) {
-  final hosts = current.network.toSet(), programs = current.process.toSet();
+  final hosts = current.network.toSet(),
+      programs = current.process.toSet(),
+      ipc = current.ipc.toSet();
   final net = !hosts.contains('*') && next.network.any((h) => !hosts.contains(h));
   final proc =
       !programs.contains('*') && next.process.any((x) => !programs.contains(x));
-  return net || proc;
+  final localIpc = next.ipc.any((x) => !ipc.contains(x));
+  return net || proc || localIpc;
 }
 
 const _maxBytes = 50 * 1024 * 1024;

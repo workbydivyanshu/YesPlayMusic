@@ -851,6 +851,14 @@ class AppLocalizationsEn extends AppLocalizations {
   }
 
   @override
+  String get pluginPermIpc => 'Connect to local apps';
+
+  @override
+  String pluginPermIpcDetail(String names) {
+    return 'Talks to other apps on this computer: $names';
+  }
+
+  @override
   String get pluginPermStorage => 'Local storage';
 
   @override
@@ -906,6 +914,16 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get officialEmbyDesc => 'Connect to an Emby server';
+
+  @override
+  String get officialLastfmDesc => 'Scrobble what you listen to';
+
+  @override
+  String get officialListenbrainzDesc =>
+      'Scrobble to ListenBrainz or a self-hosted server';
+
+  @override
+  String get officialDiscordDesc => 'Show what you\'re listening to on Discord';
 
   @override
   String get capSuggest => 'Suggestions';

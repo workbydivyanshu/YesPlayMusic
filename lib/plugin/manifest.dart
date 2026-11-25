@@ -13,6 +13,7 @@
 // 子域名）、{setting:key}（设置里填的服务器地址的主机）或 *（任意）。不写就不能联网。
 // permissions.process 是 host.spawn 能启动的程序（见 process.dart）；true 等于 ["*"]。
 // 用户还要在设置里允许这个插件运行程序。
+// permissions.ipc 是 host.ipc 能连接的本机通道（见 ipc.dart），如 "discord-ipc-*"。
 
 import 'dart:convert';
 
@@ -28,6 +29,7 @@ class PluginManifest {
     this.minAppVersion = '',
     this.network = const [],
     this.process = const [],
+    this.ipc = const [],
     this.description = '',
     this.author = '',
     this.icon = '',
@@ -38,7 +40,7 @@ class PluginManifest {
   final SourceInfo info;
   String get id => info.id;
   final String main, minAppVersion;
-  final List<String> network, process;
+  final List<String> network, process, ipc;
 
   /// 一两句介绍和作者，显示在插件卡片上；都可以不写。
   final String description, author;
@@ -113,6 +115,7 @@ class PluginManifest {
       process: perms['process'] == true
           ? const ['*']
           : strings(perms['process']),
+      ipc: strings(perms['ipc']),
       description: j['description'] is String
           ? (j['description'] as String).trim()
           : '',

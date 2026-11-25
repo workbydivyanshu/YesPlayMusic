@@ -858,6 +858,14 @@ class AppLocalizationsDe extends AppLocalizations {
   }
 
   @override
+  String get pluginPermIpc => 'Mit lokalen Apps verbinden';
+
+  @override
+  String pluginPermIpcDetail(String names) {
+    return 'Kommuniziert mit anderen Apps auf diesem Computer: $names';
+  }
+
+  @override
   String get pluginPermStorage => 'Daten speichern';
 
   @override
@@ -915,6 +923,16 @@ class AppLocalizationsDe extends AppLocalizations {
 
   @override
   String get officialEmbyDesc => 'Mit einem Emby-Server verbinden';
+
+  @override
+  String get officialLastfmDesc => 'Gehörte Titel bei Last.fm scrobbeln';
+
+  @override
+  String get officialListenbrainzDesc =>
+      'Bei ListenBrainz oder eigenem Server scrobbeln';
+
+  @override
+  String get officialDiscordDesc => 'Zeigt auf Discord, was du hörst';
 
   @override
   String get capSuggest => 'Vorschläge';

@@ -831,6 +831,14 @@ class AppLocalizationsJa extends AppLocalizations {
   }
 
   @override
+  String get pluginPermIpc => 'ローカルアプリに接続';
+
+  @override
+  String pluginPermIpcDetail(String names) {
+    return 'このコンピューター上の他のアプリと通信：$names';
+  }
+
+  @override
   String get pluginPermStorage => 'データの保存';
 
   @override
@@ -883,6 +891,15 @@ class AppLocalizationsJa extends AppLocalizations {
 
   @override
   String get officialEmbyDesc => 'Emby サーバーに接続';
+
+  @override
+  String get officialLastfmDesc => '再生した曲を Last.fm に記録';
+
+  @override
+  String get officialListenbrainzDesc => '再生した曲を ListenBrainz やセルフホストに記録';
+
+  @override
+  String get officialDiscordDesc => '聴いている曲を Discord に表示';
 
   @override
   String get capSuggest => '検索候補';
