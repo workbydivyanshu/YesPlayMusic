@@ -11,8 +11,8 @@ Sync by inspecting upstream diffs and adapting relevant, verified hunks cleanly 
 ## 1. Upstream Sync Protocol
 
 1. **Baseline Marker**:
-   - The current reviewed upstream baseline marker is **`bb8912f`**.
-   - The next pending sync batch is `bb8912f..de9997d` (31 commits).
+   - The current reviewed upstream baseline marker is **`23539c5`**.
+   - The upstream sync through `23539c5` (including Intel Mac, Windows title bar, notch mini-player, and Release.xcconfig architecture fix) is fully reviewed and shipped. Start the next sync from `23539c5`.
 2. **Commit Triage Matrix**:
    - **SKIP (Unconditional)**:
      - Telemetry & analytics (e.g. `lib/analytics.dart`, GA4 tokens, external tracking endpoints).
@@ -72,6 +72,7 @@ Sync by inspecting upstream diffs and adapting relevant, verified hunks cleanly 
 | **Wave 06** | `48840dc`, `bdba2fa`, `451ca0e` | Per-folder background isolate scanner with 30s watchdog & cancel, plugin conflict handling & auto-updates, coverflow library tab & mini-lyric persistence (310 tests) |
 | **Wave 07** | `06a9e30`, `2a3fe9c`, `debccb5` | Gapless playback in mpv, 10-band ISO Equalizer & ReplayGain, Sleep timer with 20s fade-out, Now Playing card deck cover animation & RGB background fade (331 tests) |
 | **Wave 08** | `397af25`, `9110b2f`, `44a4900` | Plugin scrobbling & playback events, local IPC socket/pipe sandbox, WebDAV official plugin, scoped host.files, Test Connection probe (341 tests) |
+| **Wave 09** | `96b11e0`, `17eb5c0`, `1f2278b`, `a1dd7ad` | Windows custom title bar, macOS Intel x64 support + per-arch updater, Dynamic Island notch mini-player & unified waveform, Release.xcconfig arm64e fix (342 tests) |
 
 ---
 
