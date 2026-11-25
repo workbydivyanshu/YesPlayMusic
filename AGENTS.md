@@ -11,7 +11,7 @@ Sync by inspecting upstream diffs and adapting relevant, verified hunks cleanly 
 ## 1. Upstream Sync Protocol
 
 1. **Baseline Marker**:
-   - The current reviewed upstream baseline marker is **`23539c5`**.
+   - The current reviewed upstream baseline marker is **`a900e83`**.
    - The upstream sync through `23539c5` (including Intel Mac, Windows title bar, notch mini-player, and Release.xcconfig architecture fix) is fully reviewed and shipped. Start the next sync from `23539c5`.
 2. **Commit Triage Matrix**:
    - **SKIP (Unconditional)**:
@@ -73,6 +73,7 @@ Sync by inspecting upstream diffs and adapting relevant, verified hunks cleanly 
 | **Wave 07** | `06a9e30`, `2a3fe9c`, `debccb5` | Gapless playback in mpv, 10-band ISO Equalizer & ReplayGain, Sleep timer with 20s fade-out, Now Playing card deck cover animation & RGB background fade (331 tests) |
 | **Wave 08** | `397af25`, `9110b2f`, `44a4900` | Plugin scrobbling & playback events, local IPC socket/pipe sandbox, WebDAV official plugin, scoped host.files, Test Connection probe (341 tests) |
 | **Wave 09** | `96b11e0`, `17eb5c0`, `1f2278b`, `a1dd7ad` | Windows custom title bar, macOS Intel x64 support + per-arch updater, Dynamic Island notch mini-player & unified waveform, Release.xcconfig arm64e fix (342 tests) |
+| **Wave 10** | `6676633`, `95d268b`, `1c9c0db`, `abf2152`, `c5b7157`, `c0e635e`, `54a6ab6` (7 audited, clean); `c660b56`, `2982e6c`, `bcbcfd4` (new) | Upstream audit of 7 landed commits (all clean), media-keys platform gating, artist on-demand discography cards, LRC offset tags applied anywhere — analyze 0 issues, 351 tests passing, Linux build + AppImage verified |
 
 ---
 
