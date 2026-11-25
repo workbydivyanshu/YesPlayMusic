@@ -943,6 +943,12 @@ class AppLocalizationsRu extends AppLocalizations {
   String get capHistory => 'История';
 
   @override
+  String get capScrobble => 'Скробблинг';
+
+  @override
+  String get capPlaybackStatus => 'Состояние воспроизведения';
+
+  @override
   String get capDislike => 'Не интересно';
 
   @override

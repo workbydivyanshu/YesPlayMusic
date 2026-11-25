@@ -915,6 +915,12 @@ class AppLocalizationsKo extends AppLocalizations {
   String get capHistory => '재생 기록';
 
   @override
+  String get capScrobble => '스크로블';
+
+  @override
+  String get capPlaybackStatus => '재생 상태';
+
+  @override
   String get capDislike => '관심 없음';
 
   @override

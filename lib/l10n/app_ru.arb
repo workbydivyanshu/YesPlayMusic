@@ -290,6 +290,8 @@
   "capRadio": "Радио",
   "capSimilar": "Похожие",
   "capHistory": "История",
+  "capScrobble": "Скробблинг",
+  "capPlaybackStatus": "Состояние воспроизведения",
   "capDislike": "Не интересно",
   "capTrackMenu": "Меню трека",
 

@@ -290,6 +290,8 @@
   "capRadio": "ラジオ",
   "capSimilar": "類似曲おすすめ",
   "capHistory": "再生履歴",
+  "capScrobble": "Scrobble",
+  "capPlaybackStatus": "再生状態",
   "capDislike": "興味なし",
   "capTrackMenu": "曲メニュー",
 

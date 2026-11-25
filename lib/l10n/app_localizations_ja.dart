@@ -915,6 +915,12 @@ class AppLocalizationsJa extends AppLocalizations {
   String get capHistory => '再生履歴';
 
   @override
+  String get capScrobble => 'Scrobble';
+
+  @override
+  String get capPlaybackStatus => '再生状態';
+
+  @override
   String get capDislike => '興味なし';
 
   @override

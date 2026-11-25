@@ -28,6 +28,7 @@ import 'music/models.dart' as m;
 import 'music/eq.dart';
 import 'music/player.dart';
 import 'music/replay_gain.dart';
+import 'music/scrobble.dart';
 import 'music/source.dart';
 import 'plugin/installer.dart';
 import 'plugin/locale.dart';
@@ -2056,6 +2057,53 @@ class AppState extends ChangeNotifier {
 
   PlaybackEngine get _eng => _engine ??= _makeEngine();
 
+  /// Scrobbling：决定时机，并通知每个导出 nowPlaying / scrobble 的插件。一旦
+  /// 算作听够，也告诉歌曲自己的源（played），让它保留播放记录。
+  late final _scrobbler = Scrobbler(
+    onNowPlaying: (t) => _broadcast(Op.nowPlaying, (s) => s.nowPlaying(t)),
+    onScrobble: (t, at, ms) {
+      sources[t.source]
+          ?.played(t)
+          .catchError((Object e) => debugPrint('played ${t.source}: $e'));
+      _broadcast(
+        Op.scrobble,
+        (s) => s.scrobble(t, startedAt: at, playedMs: ms),
+      );
+    },
+  );
+
+  // ── 播放状态（playback） ──
+  Timer? _playbackTimer;
+  String _playbackSent = '';
+
+  /// 播放状态可能变了：稍等片刻（连续切歌或连点播放只发最后一条），若歌曲与
+  /// 播放/暂停和上次发的相同就跳过；[force]（打开新歌、拖动）则一定发。
+  void _playbackSoon({bool force = false}) {
+    if (!sources.all.any((s) => s.can(Op.playback))) return;
+    if (force) _playbackSent = '';
+    _playbackTimer?.cancel();
+    _playbackTimer = Timer(const Duration(milliseconds: 300), () {
+      final r = track.ref;
+      final on = r != null && playing;
+      final sig = '${r?.key}|$on';
+      if (sig == _playbackSent) return;
+      _playbackSent = sig;
+      final ms = (position * 1000).round();
+      _broadcast(
+        Op.playback,
+        (s) => s.playback(r, playing: on, positionMs: ms),
+      );
+    });
+  }
+
+  void _broadcast(String op, Future<void> Function(Source s) call) {
+    for (final s in sources.all.toList()) {
+      if (!s.can(op)) continue;
+      // 上报失败不用打扰用户；插件自己会重试和离线补发
+      call(s).catchError((Object e) => debugPrint('$op ${s.id}: $e'));
+    }
+  }
+
   PlaybackEngine _makeEngine() {
     final e = engineFactory();
     e.onPosition = (d) {
@@ -2063,6 +2111,7 @@ class AppState extends ChangeNotifier {
       // mpv 每秒上报很多次位置；界面 10 次/秒足够，往回跳（seek）时立即更新。
       final v = d.inMilliseconds / 1000;
       if (v < position || v - position >= 0.1) position = v;
+      _scrobbler.position(track.ref!, v, playing: playing);
       _reconcileNext();
     };
     e.onDuration = (d) {
@@ -2070,6 +2119,7 @@ class AppState extends ChangeNotifier {
     };
     e.onCompleted = () {
       if (!_engineOnTrack) return;
+      _scrobbler.reset();
       // 睡眠定时「放完这首」：在下一首开头停下
       if (sleepAfterTrack) {
         _clearSleep();
@@ -2433,6 +2483,7 @@ class AppState extends ChangeNotifier {
 
   /// 让引擎跟上当前状态：换歌就重新打开，否则只切换播放/暂停。
   Future<void> _sync() async {
+    _playbackSoon();
     _topUpStation();
     final t = track;
     final ref = t.ref;
@@ -2501,6 +2552,7 @@ class AppState extends ChangeNotifier {
       );
       if (_loadedKey == t.key) {
         _engineKey = t.key;
+        _playbackSoon(force: true);
         _engineStream = s;
         // 只记哪个源，不记哪首歌；启动时恢复队列（不自动播放）不算
         if (playing) {
@@ -2568,6 +2620,7 @@ class AppState extends ChangeNotifier {
   void seek(double frac) {
     _scrubbing = false;
     position = frac.clamp(0.0, 1.0) * track.seconds;
+    _playbackSoon(force: true);
     if (_engineOnTrack) {
       _seeking++;
       _eng
@@ -2752,6 +2805,7 @@ class AppState extends ChangeNotifier {
     _queueName = '';
     _unshuffled = null;
     _stopEngine();
+    _playbackSoon();
     // 不然下次启动又恢复成清空前的队列
     _playerSave?.cancel();
     _playerSaved = '';
@@ -3644,6 +3698,7 @@ class AppState extends ChangeNotifier {
     _refreshTimer?.cancel();
     _pluginUpdateTimer?.cancel();
     _preloadTimer?.cancel();
+    _playbackTimer?.cancel();
     _sleepTick?.cancel();
     // 停手半秒内退出：把还没写的均衡器设置写掉
     if (_eqSave?.isActive ?? false) {

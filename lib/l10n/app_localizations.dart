@@ -1773,6 +1773,18 @@ abstract class AppLocalizations {
   /// **'播放记录'**
   String get capHistory;
 
+  /// Plugin capability chip: reports listens to services like Last.fm
+  ///
+  /// In zh, this message translates to:
+  /// **'听歌上报'**
+  String get capScrobble;
+
+  /// Plugin capability chip: receives playback state (e.g. for Discord status)
+  ///
+  /// In zh, this message translates to:
+  /// **'播放状态'**
+  String get capPlaybackStatus;
+
   /// No description provided for @capDislike.
   ///
   /// In zh, this message translates to:

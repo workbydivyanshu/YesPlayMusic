@@ -950,6 +950,12 @@ class AppLocalizationsFr extends AppLocalizations {
   String get capHistory => 'Historique';
 
   @override
+  String get capScrobble => 'Scrobbling';
+
+  @override
+  String get capPlaybackStatus => 'État de lecture';
+
+  @override
   String get capDislike => 'Pas intéressé';
 
   @override

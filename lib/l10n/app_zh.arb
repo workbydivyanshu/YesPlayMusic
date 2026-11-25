@@ -463,6 +463,10 @@
   "capRadio": "电台",
   "capSimilar": "相似推荐",
   "capHistory": "播放记录",
+  "capScrobble": "听歌上报",
+  "@capScrobble": { "description": "Plugin capability chip: reports listens to services like Last.fm" },
+  "capPlaybackStatus": "播放状态",
+  "@capPlaybackStatus": { "description": "Plugin capability chip: receives playback state (e.g. for Discord status)" },
   "capDislike": "不感兴趣",
   "capTrackMenu": "歌曲菜单",
 

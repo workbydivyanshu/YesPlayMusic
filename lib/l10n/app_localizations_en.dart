@@ -938,6 +938,12 @@ class AppLocalizationsEn extends AppLocalizations {
   String get capHistory => 'History';
 
   @override
+  String get capScrobble => 'Scrobbling';
+
+  @override
+  String get capPlaybackStatus => 'Playback Status';
+
+  @override
   String get capDislike => 'Dislike';
 
   @override

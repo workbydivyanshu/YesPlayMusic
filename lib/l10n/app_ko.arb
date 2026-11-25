@@ -290,6 +290,8 @@
   "capRadio": "라디오",
   "capSimilar": "비슷한 곡 추천",
   "capHistory": "재생 기록",
+  "capScrobble": "스크로블",
+  "capPlaybackStatus": "재생 상태",
   "capDislike": "관심 없음",
   "capTrackMenu": "곡 메뉴",
 

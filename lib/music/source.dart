@@ -66,6 +66,14 @@ abstract final class Op {
 
   /// 歌曲右键菜单：插件加自己的条目（trackMenu），点了执行（menuAction）。
   static const trackMenu = 'trackMenu', menuAction = 'menuAction';
+
+  /// 歌曲开始播放时调用（nowPlaying）；听够了再调 scrobble。每个导出了它们的
+  /// 插件都会收到，不限于歌曲所属的源。
+  static const nowPlaying = 'nowPlaying', scrobble = 'scrobble';
+
+  /// 播放状态变化（换歌、播放/暂停、拖动、停止），比如用来显示 Discord 状态。
+  /// 和 scrobbling 一样发给所有导出了它的插件。
+  static const playback = 'playback';
 }
 
 /// 一个音乐源。子类只覆盖自己支持的方法，并在 [ops] 里列出它们。
@@ -186,6 +194,24 @@ abstract class Source {
     Track track, {
     String playlist = '',
   }) async => _no(Op.menuAction);
+
+  /// 任意来源的歌曲开始播放（scrobbling 的 now playing）。
+  Future<void> nowPlaying(Track track) async => _no(Op.nowPlaying);
+
+  /// 任意来源的歌曲已经听够长，算一次收听。[startedAt] 是开始播放的时间，
+  /// [playedMs] 是真正听到的时长。规则见 Scrobbler。
+  Future<void> scrobble(
+    Track track, {
+    required DateTime startedAt,
+    required int playedMs,
+  }) async => _no(Op.scrobble);
+
+  /// 播放状态变化。[track] 为空表示当前没有播放；[positionMs] 是当前进度。
+  Future<void> playback(
+    Track? track, {
+    required bool playing,
+    required int positionMs,
+  }) async => _no(Op.playback);
 
   /// [quality] 取 [qualities] 之一；源按自己有的返回最接近的。
   Future<AudioStream> stream(String id, {String quality = 'high'}) async =>

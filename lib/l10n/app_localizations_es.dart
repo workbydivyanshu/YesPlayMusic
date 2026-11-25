@@ -943,6 +943,12 @@ class AppLocalizationsEs extends AppLocalizations {
   String get capHistory => 'Historial';
 
   @override
+  String get capScrobble => 'Scrobbling';
+
+  @override
+  String get capPlaybackStatus => 'Estado de reproducción';
+
+  @override
   String get capDislike => 'No me interesa';
 
   @override

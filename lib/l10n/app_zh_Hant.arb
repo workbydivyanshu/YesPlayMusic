@@ -290,6 +290,8 @@
   "capRadio": "電台",
   "capSimilar": "相似推薦",
   "capHistory": "播放紀錄",
+  "capScrobble": "听歌上报",
+  "capPlaybackStatus": "播放状态",
   "capDislike": "不感興趣",
   "capTrackMenu": "歌曲選單",
 

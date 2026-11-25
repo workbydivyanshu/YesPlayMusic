@@ -293,6 +293,8 @@
   "capRadio": "Radio",
   "capSimilar": "Similar",
   "capHistory": "History",
+  "capScrobble": "Scrobbling",
+  "capPlaybackStatus": "Playback Status",
   "capDislike": "Dislike",
   "capTrackMenu": "Track Menu",
 

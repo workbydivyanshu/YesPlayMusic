@@ -290,6 +290,8 @@
   "capRadio": "Radio",
   "capSimilar": "Ähnliche",
   "capHistory": "Verlauf",
+  "capScrobble": "Scrobbling",
+  "capPlaybackStatus": "Wiedergabestatus",
   "capDislike": "Kein Interesse",
   "capTrackMenu": "Titelmenü",
 

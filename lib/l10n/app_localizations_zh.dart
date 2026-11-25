@@ -914,6 +914,12 @@ class AppLocalizationsZh extends AppLocalizations {
   String get capHistory => '播放记录';
 
   @override
+  String get capScrobble => '听歌上报';
+
+  @override
+  String get capPlaybackStatus => '播放状态';
+
+  @override
   String get capDislike => '不感兴趣';
 
   @override
@@ -2811,6 +2817,12 @@ class AppLocalizationsZhHant extends AppLocalizationsZh {
 
   @override
   String get capHistory => '播放紀錄';
+
+  @override
+  String get capScrobble => '听歌上报';
+
+  @override
+  String get capPlaybackStatus => '播放状态';
 
   @override
   String get capDislike => '不感興趣';

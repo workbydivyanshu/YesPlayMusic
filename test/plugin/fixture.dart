@@ -81,6 +81,8 @@ export function stream({ id, quality }) {
   return { url: id === "bad" ? "file:///etc/hosts" : id === "own" ? `file://${host.dir}/index.js` : host.setting("server") + "/bin?q=" + quality };
 }
 export function escape() { return import("../../outside.js"); }
+export function nowPlaying({ track }) { host.storage.set("k", ["now", track]); }
+export function scrobble(args) { host.storage.set("k", ["scrobble", args]); }
 ''';
 
 /// 在 [root] 下写一个插件，返回插件目录。

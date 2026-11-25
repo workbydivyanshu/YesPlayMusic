@@ -202,6 +202,7 @@ class PluginSource extends Source {
     Op.removeFromPlaylist, Op.movePlaylistTrack, Op.lyrics, Op.stream,
     Op.similar, Op.station, Op.dislike, Op.trackMenu, Op.menuAction,
     Op.comments, Op.postComment, Op.likeComment,
+    Op.nowPlaying, Op.scrobble, Op.playback,
   };
 
   @override
@@ -579,6 +580,30 @@ class PluginSource extends Source {
       'playlist': playlist,
     }),
   );
+  @override
+  Future<void> nowPlaying(Track track) =>
+      invoke(Op.nowPlaying, {'track': track.toJson()});
+  @override
+  Future<void> scrobble(
+    Track track, {
+    required DateTime startedAt,
+    required int playedMs,
+  }) => invoke(Op.scrobble, {
+    'track': track.toJson(),
+    'startedAt': startedAt.toUtc().toIso8601String(),
+    'played': playedMs,
+  });
+  @override
+  Future<void> playback(
+    Track? track, {
+    required bool playing,
+    required int positionMs,
+  }) => invoke(Op.playback, {
+    'track': track?.toJson(),
+    'playing': playing,
+    'position': positionMs,
+  });
+
   @override
   Future<void> played(Track track) async {
     if (!can(Op.played)) return;
