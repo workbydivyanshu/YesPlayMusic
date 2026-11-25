@@ -20,15 +20,20 @@ int _ms(Match m) {
 
 /// 解析一段 LRC，得到 (时间, 文本, 逐字) 的列表，已排序。
 List<LyricLine> parseLrc(String lrc) {
+  final rows = lrc.split(RegExp(r'\r?\n'));
   var offset = 0;
+  for (final row in rows.reversed) {
+    final off = _offset.firstMatch(row.trimLeft());
+    if (off != null) {
+      offset = int.tryParse(off.group(1)!) ?? 0; // oversized → no offset
+      break;                                     // last one wins
+    }
+  }
   final out = <LyricLine>[];
-  for (final raw in lrc.split(RegExp(r'\r?\n'))) {
+  for (final raw in rows) {
     final line = raw.trim();
     final off = _offset.firstMatch(line);
-    if (off != null) {
-      offset = int.parse(off.group(1)!);
-      continue;
-    }
+    if (off != null) continue; // already consumed above
     final stamps = <int>[];
     var rest = line;
     while (true) {
@@ -37,17 +42,14 @@ List<LyricLine> parseLrc(String lrc) {
       stamps.add(_ms(m));
       rest = rest.substring(m.end);
     }
-    if (stamps.isEmpty) continue; // [ti:]、[ar:] 之类的元信息，或无时间的行
+    if (stamps.isEmpty) continue;
     final (text, words) = _words(rest);
     for (final s in stamps) {
-      // 正 offset 表示歌词提前出现。
       final start = (s - offset).clamp(0, 1 << 31);
-      out.add(
-        LyricLine(start: start, text: text, words: _shift(words, -offset)),
-      );
+      out.add(LyricLine(start: start, text: text, words: _shift(words, -offset)));
     }
   }
-  out.sort((a, b) => a.start.compareTo(b.start)); // 稳定排序，同时间保持原顺序
+  out.sort((a, b) => a.start.compareTo(b.start));
   return out;
 }
 
