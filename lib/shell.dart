@@ -1032,7 +1032,7 @@ class _LyricSegState extends State<_LyricSeg> {
         valueListenable: app.pos,
         builder: (context, _, _) {
           final prog = app.progress;
-          final t = app.track;
+          final duration = app.playbackDuration;
           return Scrubber(
             onChanged: app.scrub,
             onCommit: app.seek,
@@ -1043,10 +1043,10 @@ class _LyricSegState extends State<_LyricSeg> {
                   app.hasLyrics && (app.miniLyric || at != null || dragging);
               // 拖动时左边的时间跟着手走。
               final elapsed = dragging && at != null
-                  ? at * t.seconds
+                  ? at * duration
                   : app.position;
               return TipAnchor(
-                text: fmtTime((at ?? 0) * t.seconds),
+                text: fmtTime((at ?? 0) * duration),
                 show: at != null && !dragging,
                 dx: (at ?? 0) * w,
                 child: ClipRSuperellipse(
@@ -1155,7 +1155,7 @@ class _LyricSegState extends State<_LyricSeg> {
                                   ),
                                   const Spacer(),
                                   tx(
-                                    t.dur,
+                                    fmtTime(duration),
                                     12,
                                     w: w600,
                                     c: pal.muted,

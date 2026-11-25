@@ -1429,7 +1429,7 @@ class _Progress extends StatelessWidget {
             valueListenable: app.pos,
             builder: (context, _, _) {
               final prog = app.progress;
-              final t = app.track;
+              final duration = app.playbackDuration;
               Widget labels(Color c) => Stack(
                 children: [
                   Positioned(
@@ -1451,7 +1451,13 @@ class _Progress extends StatelessWidget {
                     top: 0,
                     bottom: 0,
                     child: Center(
-                      child: tx(t.dur, 14, w: w700, c: c, tnum: true),
+                      child: tx(
+                        fmtTime(duration),
+                        14,
+                        w: w700,
+                        c: c,
+                        tnum: true,
+                      ),
                     ),
                   ),
                 ],
@@ -1460,7 +1466,7 @@ class _Progress extends StatelessWidget {
                 onChanged: app.scrub,
                 onCommit: app.seek,
                 builder: (_, at, dragging) => TipAnchor(
-                  text: fmtTime((at ?? 0) * t.seconds),
+                  text: fmtTime((at ?? 0) * duration),
                   show: at != null && !dragging,
                   onCover: true,
                   dx: (at ?? 0) * w,

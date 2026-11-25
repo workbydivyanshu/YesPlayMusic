@@ -2038,8 +2038,15 @@ class AppState extends ChangeNotifier {
   final ValueNotifier<double> pos = ValueNotifier(0);
   double get position => pos.value;
   set position(double v) => pos.value = v;
-  double get progress =>
-      track.seconds == 0 ? 0 : (position / track.seconds).clamp(0.0, 1.0);
+
+  /// Current track's duration in seconds, if known.
+  double get playbackDuration => track.seconds > 0
+      ? track.seconds.toDouble()
+      : (_engineOnTrack ? _engineSeconds : 0);
+  double get progress {
+    final total = playbackDuration;
+    return total == 0 ? 0 : (position / total).clamp(0.0, 1.0);
+  }
 
   /// 滑块位置；实际响度按 AudioEngine.mpvVolume 的指数曲线换算。
   /// 0.72 约 −11 dB，和改曲线前默认的 0.65 一样响。
@@ -2140,11 +2147,15 @@ class AppState extends ChangeNotifier {
       // mpv 每秒上报很多次位置；界面 10 次/秒足够，往回跳（seek）时立即更新。
       final v = d.inMilliseconds / 1000;
       if (v < position || v - position >= 0.1) position = v;
+      if (_gaplessDurationPending && d > Duration.zero) {
+        _gaplessDurationPending = false;
+        if (_engineSeconds <= 0) unawaited(_readGaplessDuration(e, track.key));
+      }
       _scrobbler.position(track.ref!, v, playing: playing);
       _reconcileNext();
     };
     e.onDuration = (d) {
-      if (_engineOnTrack) _engineSeconds = d.inMilliseconds / 1000;
+      if (_engineOnTrack) _setEngineDuration(d);
     };
     e.onCompleted = () {
       if (!_engineOnTrack) return;
@@ -2172,6 +2183,7 @@ class AppState extends ChangeNotifier {
   void _stopEngine() {
     _cancelPreload();
     _armedSig = null;
+    _gaplessDurationPending = false;
     if (_loadedKey == null && _engineKey == null) return;
     _loadedKey = null;
     _engineKey = null;
@@ -2233,6 +2245,20 @@ class AppState extends ChangeNotifier {
 
   /// mpv 报来的当前曲目时长（秒），比元数据准；还不知道时是 0。
   double _engineSeconds = 0;
+  bool _gaplessDurationPending = false;
+
+  Future<void> _readGaplessDuration(PlaybackEngine engine, String key) async {
+    final duration = await engine.readDuration();
+    if (_engineOnTrack && track.key == key && _engineSeconds <= 0) {
+      _setEngineDuration(duration);
+    }
+  }
+
+  void _setEngineDuration(Duration duration) {
+    final previous = playbackDuration;
+    _engineSeconds = duration.isNegative ? 0 : duration.inMilliseconds / 1000;
+    if (playbackDuration != previous) notifyListeners();
+  }
 
   /// 引擎里正在放的音源，改 ReplayGain 设置时用。
   m.AudioStream? _engineStream;
@@ -2313,6 +2339,9 @@ class AppState extends ChangeNotifier {
     _engineSeconds = 0;
     _loadedKey = key;
     _engineKey = key;
+    // The duration stream drops equal values, and its state can still be stale
+    // until the next file starts producing positions.
+    _gaplessDurationPending = true;
     _preloadedStream = null;
     _topUpStation();
     if (!_applyCachedLyrics(t)) _loadLyrics(t);
@@ -2581,8 +2610,10 @@ class AppState extends ChangeNotifier {
       );
       if (_loadedKey == t.key) {
         _engineKey = t.key;
-        _playbackSoon(force: true);
         _engineStream = s;
+        // The duration event can arrive before open finishes.
+        _setEngineDuration(_eng.duration);
+        _playbackSoon(force: true);
         // 只记哪个源，不记哪首歌；启动时恢复队列（不自动播放）不算
         if (playing) {
           Analytics.instance.event('play', {
@@ -2641,14 +2672,20 @@ class AppState extends ChangeNotifier {
 
   /// 拖动中：只更新显示的位置。
   void scrub(double frac) {
+    final total = playbackDuration;
+    if (total <= 0) return;
     _scrubbing = true;
-    position = frac.clamp(0.0, 1.0) * track.seconds;
+    position = frac.clamp(0.0, 1.0) * total;
   }
 
   /// 跳到 [frac]（0~1）。拖进度条时在松手时调用。
-  void seek(double frac) {
+  void seek(double frac) => seekTo(frac.clamp(0.0, 1.0) * playbackDuration);
+
+  void seekTo(double seconds) {
     _scrubbing = false;
-    position = frac.clamp(0.0, 1.0) * track.seconds;
+    final total = playbackDuration;
+    if (total <= 0) return;
+    position = seconds.clamp(0.0, total);
     _playbackSoon(force: true);
     if (_engineOnTrack) {
       _seeking++;
@@ -2659,10 +2696,7 @@ class AppState extends ChangeNotifier {
   }
 
   /// 快进 / 快退 [s] 秒。
-  void seekBy(double s) {
-    if (track.seconds <= 0) return;
-    seek((position + s) / track.seconds);
-  }
+  void seekBy(double s) => seekTo(position + s);
 
   /// 下一首。[play] 为 false 时只切过去、不开始播放（睡眠定时用）。
   void next({bool play = true}) {
@@ -3453,7 +3487,7 @@ class AppState extends ChangeNotifier {
   void seekLyric(int i) {
     final ls = lyricLines;
     if (i < 0 || i >= ls.length) return;
-    seek(track.seconds == 0 ? 0 : ls[i].start / 1000 / track.seconds);
+    seekTo(ls[i].start / 1000);
   }
 
   /// 设置某首歌的歌词偏移（毫秒）。
@@ -3779,6 +3813,7 @@ class AppState extends ChangeNotifier {
     }
     _playerSave?.cancel();
     _savePlayer();
+    _engineKey = null;
     _engine?.dispose();
     audioCache.dispose();
     cache.dispose();

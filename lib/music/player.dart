@@ -23,6 +23,8 @@ abstract interface class PlaybackEngine {
   abstract void Function(String)? onError;
   abstract void Function(String key)? onAdvanced;
   String? get queuedKey;
+  Duration get duration;
+  Future<Duration> readDuration();
   Future<void> open(
     AudioStream s, {
     required String key,
@@ -137,6 +139,21 @@ class AudioEngine implements PlaybackEngine {
   String? _currentKey, _queuedKey;
   @override
   String? get queuedKey => _queuedKey;
+
+  @override
+  Duration get duration => _p.state.duration;
+
+  @override
+  Future<Duration> readDuration() async {
+    final n = _p.platform;
+    if (n is! mk.NativePlayer) return Duration.zero;
+    final value = await n.getProperty('duration', waitForInitialization: false);
+    final seconds = double.tryParse(value);
+    if (seconds == null || !seconds.isFinite || seconds <= 0) {
+      return Duration.zero;
+    }
+    return Duration(microseconds: (seconds * 1000000).round());
+  }
 
   /// 打开并（默认）开始播放，替换 mpv 的整个列表。[start] 恢复上次的进度。
   /// [rg] 和 [gainDb] 是这首的 ReplayGain，见 replay_gain.dart。
