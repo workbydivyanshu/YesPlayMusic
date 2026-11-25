@@ -173,6 +173,8 @@
   "settingsKeepRunning": "关闭窗口后在后台继续运行",
   "trayShowWindow": "显示窗口",
   "trayQuit": "退出",
+  "settingsDynamicIsland": "灵动岛",
+  "settingsDynamicIslandHint": "在屏幕顶部的刘海处显示正在播放，鼠标移上去展开控制",
 
   "aboutDownloadVersion": "下载 {version}",
   "@aboutDownloadVersion": {

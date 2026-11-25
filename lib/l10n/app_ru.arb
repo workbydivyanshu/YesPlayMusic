@@ -151,6 +151,8 @@
   "settingsKeepRunning": "Продолжать работу после закрытия окна",
   "trayShowWindow": "Показать окно",
   "trayQuit": "Выход",
+  "settingsDynamicIsland": "Динамический остров",
+  "settingsDynamicIslandHint": "Показывать текущий трек у выреза вверху экрана; наведите курсор, чтобы открыть управление",
 
   "aboutDownloadVersion": "Скачать {version}",
   "aboutChecking": "Проверка…",

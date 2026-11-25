@@ -443,6 +443,12 @@ class AppLocalizationsZh extends AppLocalizations {
   String get trayQuit => '退出';
 
   @override
+  String get settingsDynamicIsland => '灵动岛';
+
+  @override
+  String get settingsDynamicIslandHint => '在屏幕顶部的刘海处显示正在播放，鼠标移上去展开控制';
+
+  @override
   String aboutDownloadVersion(String version) {
     return '下载 $version';
   }
@@ -2384,6 +2390,12 @@ class AppLocalizationsZhHant extends AppLocalizationsZh {
 
   @override
   String get trayQuit => '結束';
+
+  @override
+  String get settingsDynamicIsland => '動態島';
+
+  @override
+  String get settingsDynamicIslandHint => '在螢幕頂部的瀏海處顯示正在播放，滑鼠移上去展開控制';
 
   @override
   String aboutDownloadVersion(String version) {
