@@ -3011,10 +3011,45 @@ class AppState extends ChangeNotifier {
         });
   }
 
-  /// 歌单内容变了：下次进歌单页重新取，音乐库里的歌单列表也重新取。
+  /// 歌单内容变了：下次进歌单页重新取，音乐库里这个源的歌单也重新取，
+  /// 让卡片显示新的曲目数和封面；曲目、专辑、艺人仍用缓存。
   void _playlistChanged(String source, String id) {
     dropData(DataReq.playlist(source, id));
     _editable.remove(source);
+    _refreshLibraryPlaylists(source);
+  }
+
+  /// 重新取 [source] 已加载音乐库里的歌单并换上去。还没加载的音乐库会在打开时再取。
+  /// 失败时保持已经显示的卡片不变。
+  Future<void> _refreshLibraryPlaylists(String source) async {
+    final s = sources[source];
+    final lib = _libraries[source];
+    if (s == null || lib == null || !s.can(Op.playlists)) return;
+    try {
+      final List<m.Playlist> list;
+      if (s is PluginSource) {
+        // 和 [_loadPluginLibrary] 用同一个 op 和缓存副本，下次启动也能看到新卡片。
+        final raw = await s.raw(Op.playlists);
+        final items = raw is List ? raw : const <Object?>[];
+        list = List.unmodifiable([
+          for (final x in items)
+            if (x is Map) m.Playlist.fromJson(x.cast<String, Object?>()),
+        ]);
+        cache.put(
+          '${cacheSpace(s.id)}/library/playlists',
+          Policies.mine,
+          items,
+        );
+      } else {
+        list = await s.playlists();
+      }
+      if (_libraries[source] != lib) return;
+      lib.playlists = list;
+      lib.errors.remove('playlists');
+      notifyListeners();
+    } catch (_) {
+      // 保持已经显示的卡片。
+    }
   }
 
   String _why(Object e, String fallback) =>
