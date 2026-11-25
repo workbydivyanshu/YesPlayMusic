@@ -71,6 +71,8 @@ Palette P = Palette.darkPalette;
 /// 主题色（设置里可换），深浅两套。
 Color accent = const Color(0xFFD6B0FA);
 
+const swatchKeys = ['lilac', 'sky', 'mint', 'sun', 'rose', 'flame'];
+
 const swatchesDark = [
   Color(0xFFD6B0FA),
   Color(0xFF8EC5FF),
