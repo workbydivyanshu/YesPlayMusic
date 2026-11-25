@@ -5,6 +5,21 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 
 ## [Unreleased]
 
+## [3.0.3] - 2026-11-25
+
+### Improvements & Fixes
+
+- **Artist Discography Virtualization**: Render album and EP cards on demand with `ListView.separated` on artist details pages, eliminating UI lag on artists with large discographies.
+- **Media Keys Platform Safeguard**: Safely hide global media key configuration on platforms where the desktop environment does not support global shortcut interception.
+- **LRC Parser Robustness**: Correctly parse and apply `[offset:+/-ms]` time-shift tags anywhere in LRC lyric files, with overflow-safe numeric handling.
+- **Library Albumless Songs Display**: Properly count and display local tracks that lack album metadata in library views.
+- **Local Search Exact Match Count**: Report accurate total match count across filtered local tracks and paginated results.
+- **Empty Search States**: Display dedicated empty-state illustrations and messages when search categories have no results.
+- **Accent Color Persistence**: Reliably preserve custom accent swatch selections across application restarts.
+- **macOS Build & Architecture Fixes**: Resolved Xcode `arm64e` framework resolution and automated ephemeral config generation.
+- **Windows Title Bar**: Native window caption buttons and unified dark styling on Windows 10/11.
+
+
 ## [3.0.1] - 2026-11-24
 
 ### Fixes & Enhancements
