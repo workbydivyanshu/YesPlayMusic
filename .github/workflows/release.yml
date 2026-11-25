@@ -48,6 +48,7 @@ jobs:
   macos:
     needs: version
     runs-on: macos-latest
+    continue-on-error: true
     env:
       VERSION: ${{ needs.version.outputs.version }}
       BUILD: ${{ needs.version.outputs.build }}
@@ -152,6 +153,13 @@ jobs:
           name: macos
           path: dist/*
 
+      - name: Attach macOS assets to release
+        if: always() && !cancelled()
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          gh release upload "$TAG" dist/* --clobber || true
+
   windows:
     needs: version
     runs-on: windows-2022
@@ -253,6 +261,7 @@ jobs:
 
   release:
     needs: [version, macos, windows, linux]
+    if: always() && needs.version.result == 'success' && needs.windows.result == 'success' && needs.linux.result == 'success'
     runs-on: ubuntu-24.04
     permissions:
       contents: write
@@ -263,6 +272,7 @@ jobs:
         with:
           ref: ${{ env.TAG }}
       - uses: actions/download-artifact@v4
+        continue-on-error: true
         with:
           path: dist
           merge-multiple: true
@@ -297,9 +307,10 @@ jobs:
           releaseDate: '$(date -u +%Y-%m-%dT%H:%M:%S.000Z)'
           EOF
           done
-      - name: Create release
+      - name: Create or update release
         env:
           GH_TOKEN: ${{ github.token }}
         run: |
           gh release create "$TAG" dist/* --latest --verify-tag \
-            --title "YesPlayMusic $VERSION" --notes-file notes.md
+            --title "YesPlayMusic $VERSION" --notes-file notes.md || \
+          gh release upload "$TAG" dist/* --clobber

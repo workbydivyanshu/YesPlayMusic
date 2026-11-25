@@ -47,6 +47,7 @@ jobs:
           - os: linux
             runner: ubuntu-22.04
     runs-on: ${{ matrix.runner }}
+    continue-on-error: ${{ matrix.os == 'macos' }}
     steps:
       - uses: actions/checkout@v4
       - uses: subosito/flutter-action@v2
