@@ -173,7 +173,13 @@ class ImageDiskCache {
     if (d == null || !await Directory(d).exists()) return _bytes = 0;
     var n = 0;
     await for (final f in Directory(d).list(recursive: true)) {
-      if (f is File) n += await f.length();
+      if (f is File) {
+        try {
+          n += await f.length();
+        } on FileSystemException {
+          // 临时文件被并发重命名或删除
+        }
+      }
     }
     return _bytes = n;
   }
@@ -189,8 +195,12 @@ class ImageDiskCache {
       final files = <(File, DateTime, int)>[];
       await for (final f in Directory(d).list(recursive: true)) {
         if (f is File) {
-          final st = await f.stat();
-          files.add((f, st.modified, st.size));
+          try {
+            final st = await f.stat();
+            files.add((f, st.modified, st.size));
+          } on FileSystemException {
+            // 临时文件被并发重命名或删除
+          }
         }
       }
       files.sort((a, b) => a.$2.compareTo(b.$2));
