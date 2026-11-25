@@ -895,9 +895,6 @@ class SourceInfo {
   );
 }
 
-/// 音质档位，从低到高。源可以有别的档位或没有档位，按它自己有的返回。
-const qualities = ['standard', 'high', 'lossless'];
-
 /// 一条热门搜索：词，加上一句可选的说明。
 class HotSearch {
   const HotSearch(this.word, [this.hint = '']);

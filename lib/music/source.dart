@@ -221,7 +221,8 @@ abstract class Source {
     required int positionMs,
   }) async => _no(Op.playback);
 
-  /// [quality] 取 [qualities] 之一；源按自己有的返回最接近的。
+  /// [quality] is one of `standard`, `high`, or `lossless`; the source returns
+  /// the closest one it has.
   Future<AudioStream> stream(String id, {String quality = 'high'}) async =>
       _no(Op.stream);
 
