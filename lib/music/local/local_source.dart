@@ -10,12 +10,14 @@ import 'dart:io';
 import 'dart:isolate';
 
 import 'package:audio_metadata_reader/audio_metadata_reader.dart' as tags;
+import 'package:crypto/crypto.dart';
 import 'package:path/path.dart' as p;
 
 import '../../l10n/l10n.dart';
 import '../lrc.dart';
 import '../models.dart';
 import '../source.dart';
+import 'mp3_info.dart';
 
 /// 本地源能播放的扩展名 → Stream.type。
 const audioTypes = {
@@ -94,6 +96,7 @@ class LocalSource extends Source {
   Map<String, LocalEntry> _byPath = const {};
   Map<String, List<LocalEntry>> _byAlbum = const {};
   Map<String, List<LocalEntry>> _byArtist = const {};
+  Map<String, List<LocalEntry>> _byAlbumArtist = const {};
 
   /// 专辑加进来的时间：里面最新的那个文件的修改时间。
   Map<String, String> _albumAdded = const {};
@@ -154,8 +157,14 @@ class LocalSource extends Source {
     _byPath = {for (final e in list) e.path: e};
     final byAlbum = <String, List<LocalEntry>>{};
     final byArtist = <String, List<LocalEntry>>{};
+    final byAlbumArtist = <String, List<LocalEntry>>{};
     for (final e in list) {
-      if (e.album.isNotEmpty) (byAlbum[albumId(e)] ??= []).add(e);
+      if (e.album.isNotEmpty) {
+        (byAlbum[albumId(e)] ??= []).add(e);
+        if (e.albumArtist.isNotEmpty) {
+          (byAlbumArtist[artistId(e.albumArtist)] ??= []).add(e);
+        }
+      }
       for (final a in e.artists) {
         (byArtist[artistId(a)] ??= []).add(e);
       }
@@ -170,6 +179,7 @@ class LocalSource extends Source {
     }
     _byAlbum = byAlbum;
     _byArtist = byArtist;
+    _byAlbumArtist = byAlbumArtist;
     _albumAdded = {
       for (final MapEntry(:key, :value) in byAlbum.entries)
         key: value
@@ -185,12 +195,20 @@ class LocalSource extends Source {
 
   String _uri(String path) => path.isEmpty ? '' : Uri.file(path).toString();
 
-  Album _album(LocalEntry e) => e.album.isEmpty
+  String _albumCover(LocalEntry e) {
+    if (e.cover.isNotEmpty) return e.cover;
+    for (final track in _byAlbum[albumId(e)] ?? const <LocalEntry>[]) {
+      if (track.cover.isNotEmpty) return track.cover;
+    }
+    return '';
+  }
+
+  Album _album(LocalEntry e, {bool withAlbumCover = false}) => e.album.isEmpty
       ? const Album(id: '', name: '')
       : Album(
           id: albumId(e),
           name: e.album,
-          imageUrl: _uri(e.cover),
+          imageUrl: _uri(withAlbumCover ? _albumCover(e) : e.cover),
           artists: e.albumArtist.isEmpty
               ? const []
               : [Artist(id: artistId(e.albumArtist), name: e.albumArtist)],
@@ -212,7 +230,8 @@ class LocalSource extends Source {
     final seen = <String>{};
     return [
       for (final e in es)
-        if (e.album.isNotEmpty && seen.add(albumId(e))) _album(e),
+        if (e.album.isNotEmpty && seen.add(albumId(e)))
+          _album(e, withAlbumCover: true),
     ];
   }
 
@@ -315,17 +334,23 @@ class LocalSource extends Source {
   Future<AlbumPage> album(String id) async {
     final es = _byAlbum[id];
     if (es == null) throw SourceError(SourceErrorKind.failed, L.albumNotFound);
-    return AlbumPage(album: _album(es.first), tracks: es.map(track).toList());
+    return AlbumPage(
+      album: _album(es.first, withAlbumCover: true),
+      tracks: es.map(track).toList(),
+    );
   }
 
   @override
   Future<ArtistPage> artist(String id) async {
-    final es = _byArtist[id];
-    if (es == null) {
+    final es = _byArtist[id] ?? const [];
+    final albumEs = _byAlbumArtist[id] ?? const [];
+    if (es.isEmpty && albumEs.isEmpty) {
       throw SourceError(SourceErrorKind.failed, L.localArtistNotFound);
     }
-    final name = es.first.artists.firstWhere((a) => artistId(a) == id);
-    final albums = _albums(es)
+    final name = es.isNotEmpty
+        ? es.first.artists.firstWhere((a) => artistId(a) == id)
+        : albumEs.first.albumArtist;
+    final albums = _albums([...es, ...albumEs])
       ..sort((a, b) => b.released.compareTo(a.released));
     return ArtistPage(
       artist: Artist(id: id, name: name),
@@ -350,29 +375,56 @@ class LocalSource extends Source {
 
   /// 先找同名 .lrc（以及 .trans.lrc 翻译），没有再读标签里内嵌的歌词。
   @override
-  Future<Lyrics> lyrics(String id) async {
+  Future<Lyrics> lyrics(String id) => Isolate.run(() {
     final base = p.withoutExtension(id);
-    final lrc = _readText('$base.lrc');
+    final lrc = _readSidecar(base, '.lrc');
     if (lrc != null) {
-      return Lyrics(lrc: lrc, translation: _readText('$base.trans.lrc') ?? '');
+      return Lyrics(
+        lrc: lrc,
+        translation: _readSidecar(base, '.trans.lrc') ?? '',
+      );
     }
-    final embedded = await Isolate.run(() {
-      try {
-        return tags.readMetadata(File(id)).lyrics ?? '';
-      } catch (_) {
-        return '';
-      }
-    });
+    final String embedded;
+    try {
+      embedded = tags.readMetadata(File(id)).lyrics ?? '';
+    } catch (_) {
+      return const Lyrics();
+    }
     // 内嵌的可能只是纯文本（没有时间戳），这时当作没有逐行歌词。
     if (parseLrc(embedded).isEmpty) return const Lyrics();
     return Lyrics(lrc: embedded);
+  });
+
+  /// 同名歌词文件：先精确匹配，再把目录里以文件名开头、扩展名只差大小写的
+  /// 文件按小写优先找出来，这样在区分大小写的文件系统上也能读到 .LRC。
+  static String? _readSidecar(String base, String extension) {
+    final exactPath = '$base$extension';
+    final exact = _readText(exactPath);
+    if (exact != null) return exact;
+
+    final stem = p.basename(base);
+    try {
+      for (final entry in Directory(
+        p.dirname(base),
+      ).listSync(followLinks: false)) {
+        final name = p.basename(entry.path);
+        if (name == '$stem$extension' || !name.startsWith(stem)) continue;
+        if (name.substring(stem.length).toLowerCase() != extension) continue;
+        final text = _readText(entry.path);
+        if (text != null) return text;
+      }
+    } on FileSystemException {
+      return null;
+    }
+    return null;
   }
 
   static String? _readText(String path) {
     final f = File(path);
-    if (!f.existsSync()) return null;
     try {
-      return f.readAsStringSync();
+      return f.existsSync() ? f.readAsStringSync() : null;
+    } on FileSystemException {
+      return null;
     } on FormatException {
       return null; // 非 UTF-8（比如 GBK）的 LRC，暂不支持
     }
@@ -494,40 +546,74 @@ void _walk(
   }
 }
 
-/// 同一张专辑所在的文件夹。CD1、Disc 2 这类分碟子文件夹算作上一级，
-/// 这样多碟专辑不会被拆开。
-String albumDir(String path) {
-  final dir = p.dirname(path);
-  return RegExp(
-        r'^(cd|disc|disk)\s*\d+$',
-        caseSensitive: false,
-      ).hasMatch(p.basename(dir))
-      ? p.dirname(dir)
-      : dir;
+final _discFolder = RegExp(r'^(?:cd|disc|disk)\s*(\d+)$', caseSensitive: false);
+
+/// [dir] 所属的专辑文件夹，以及从 CD1、Disc 2 这类分碟子文件夹名里解析出的碟号。
+({String folder, int? disc}) _albumLocation(String dir) {
+  final number = _discFolder.firstMatch(p.basename(dir))?.group(1);
+  return number == null
+      ? (folder: dir, disc: null)
+      : (folder: p.dirname(dir), disc: int.tryParse(number));
 }
 
-/// 标签里没有专辑艺人时，不能拿每首歌自己的艺人当专辑艺人，否则原声带、
-/// 合辑里有一首歌是别的艺人，就会被拆成两张同名专辑。
-/// 这里按"同一文件夹 + 同一专辑名"分组，取组里出现最多的艺人作为专辑艺人。
+/// 同一张专辑所在的文件夹。CD1、Disc 2 这类分碟子文件夹算作上一级，
+/// 这样多碟专辑不会被拆开。
+String albumDir(String path) => _albumLocation(p.dirname(path)).folder;
+
+/// 标签里缺专辑艺人时，先继承同文件夹 + 同专辑名里唯一明确的专辑艺人标签，
+/// 这样部分标注的专辑不会被拆开；否则取未标注曲目里出现最多的艺人，让合辑保持完整。
 void _fillAlbumArtists(List<LocalEntry> entries) {
-  final groups = <String, List<LocalEntry>>{};
+  final groups = <(String, String), List<LocalEntry>>{};
   for (final e in entries) {
-    if (e.album.isEmpty || e.albumArtist.isNotEmpty) continue;
-    (groups['${albumDir(e.path)}\x01${fold(e.album)}'] ??= []).add(e);
+    if (e.album.isEmpty) continue;
+    (groups[(albumDir(e.path), fold(e.album))] ??= []).add(e);
   }
   for (final g in groups.values) {
+    final tagged = <String, String>{};
+    final untagged = <LocalEntry>[];
     final counts = <String, int>{};
     for (final e in g) {
-      if (e.artists.isNotEmpty) {
-        counts[e.artists.first] = (counts[e.artists.first] ?? 0) + 1;
+      if (e.albumArtist.isNotEmpty) {
+        tagged.putIfAbsent(fold(e.albumArtist), () => e.albumArtist);
+      } else {
+        untagged.add(e);
+        if (e.artists.isNotEmpty) {
+          counts[e.artists.first] = (counts[e.artists.first] ?? 0) + 1;
+        }
       }
     }
-    if (counts.isEmpty) continue;
-    final top = counts.entries.reduce((a, b) => b.value > a.value ? b : a).key;
-    for (final e in g) {
-      e.albumArtist = top;
+    final artist = tagged.length == 1
+        ? tagged.values.single
+        : counts.isEmpty
+        ? ''
+        : counts.entries.reduce((a, b) => b.value > a.value ? b : a).key;
+    for (final e in untagged) {
+      e.albumArtist = artist;
     }
   }
+}
+
+tags.AudioMetadata _readScanMetadata(File file) {
+  // 通用的 MP3 映射会把 TPE2 当作曲目艺人。用格式专用的元数据把 TPE1 和 TPE2 分开。
+  final mp3 = p.extension(file.path).toLowerCase() == '.mp3'
+      ? tags.readAllMetadata(file, getImage: true)
+      : null;
+  if (mp3 is tags.Mp3Metadata) {
+    return tags.AudioMetadata(
+        file: file,
+        title: mp3.songName,
+        artist: _clean(mp3.leadPerformer) ?? mp3.originalArtist,
+        album: mp3.album,
+        albumArtist: mp3.bandOrOrchestra,
+        year: DateTime(mp3.originalReleaseYear ?? mp3.year ?? 0),
+        discNumber: mp3.discNumber,
+        trackNumber: mp3.trackNumber,
+        duration: mp3.duration,
+      )
+      ..pictures = mp3.pictures
+      ..performers.addAll(mp3.customMetadata['GUEST ARTIST']?.split('/') ?? []);
+  }
+  return tags.readMetadata(file, getImage: true);
 }
 
 LocalEntry _entry(
@@ -539,7 +625,7 @@ LocalEntry _entry(
 ) {
   tags.AudioMetadata? m;
   try {
-    m = tags.readMetadata(f, getImage: true);
+    m = _readScanMetadata(f);
   } catch (_) {
     m = null;
   }
@@ -556,8 +642,11 @@ LocalEntry _entry(
   final album = _clean(m?.album) ?? '';
   final albumArtist = _clean(m?.albumArtist) ?? '';
 
+  final isMp3 = p.extension(path).toLowerCase() == '.mp3';
+  final duration = (isMp3 ? infoHeaderDuration(f) : null) ?? m?.duration;
+
   final dir = p.dirname(path);
-  final albumFolder = albumDir(path);
+  final (folder: albumFolder, disc: folderDisc) = _albumLocation(dir);
   String coverIn(String folder) =>
       folderCovers.putIfAbsent(folder, () => _folderCover(folder));
   var cover = coverIn(dir);
@@ -576,9 +665,9 @@ LocalEntry _entry(
     album: album,
     albumArtist: album.isEmpty ? '' : albumArtist,
     year: m?.year?.year ?? 0,
-    disc: m?.discNumber ?? 0,
+    disc: m?.discNumber ?? folderDisc ?? 0,
     number: m?.trackNumber ?? 0,
-    durationMs: m?.duration?.inMilliseconds ?? 0,
+    durationMs: duration?.inMilliseconds ?? 0,
     cover: cover,
     modified: f.statSync().modified,
   );
@@ -627,7 +716,8 @@ String _saveCover(List<tags.Picture> pics, String key, String cacheDir) {
     'image/webp' => '.webp',
     _ => '.jpg',
   };
-  final file = File(p.join(cacheDir, 'covers', '${fnv1a(key)}$ext'));
+  final digest = sha256.convert(pic.bytes);
+  final file = File(p.join(cacheDir, 'covers', '${fnv1a(key)}-$digest$ext'));
   try {
     if (!file.existsSync() || file.lengthSync() != pic.bytes.length) {
       file.parent.createSync(recursive: true);

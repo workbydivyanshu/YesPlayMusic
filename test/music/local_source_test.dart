@@ -98,6 +98,47 @@ File wav(
   return f;
 }
 
+/// 只写扫描 Vorbis 注释所需的 FLAC 元数据块。
+void flacWithTags(String path, Map<String, String> tags) {
+  final comments = BytesBuilder();
+  void u32(int value) => comments.add(
+    (ByteData(4)..setUint32(0, value, Endian.little)).buffer.asUint8List(),
+  );
+  u32(0); // 空的 vendor 字符串。
+  u32(tags.length);
+  for (final MapEntry(:key, :value) in tags.entries) {
+    final comment = '$key=$value'.codeUnits;
+    u32(comment.length);
+    comments.add(comment);
+  }
+  final header = ByteData(4)..setUint32(0, 0x84000000 | comments.length);
+  File(path)
+    ..parent.createSync(recursive: true)
+    ..writeAsBytesSync([
+      ...'fLaC'.codeUnits,
+      ...header.buffer.asUint8List(),
+      ...comments.takeBytes(),
+    ]);
+}
+
+/// 写一个带 ID3v2.3 文本帧（TIT2/TALB/TPE1/TPE2…）的 MP3。
+void _taggedMp3(String path, Map<String, String> frames) {
+  final tag = BytesBuilder();
+  for (final MapEntry(:key, :value) in frames.entries) {
+    tag.add(key.codeUnits);
+    tag.add((ByteData(4)..setUint32(0, value.length + 1)).buffer.asUint8List());
+    tag.add([0, 0, 0, ...value.codeUnits]);
+  }
+  final size = tag.length;
+  File(path).writeAsBytesSync([
+    ...'ID3'.codeUnits, 3, 0, 0,
+    for (final shift in [21, 14, 7, 0]) (size >> shift) & 0x7f,
+    ...tag.takeBytes(),
+    // MPEG-1 Layer III 帧头，128 kbps、44.1 kHz。
+    for (var i = 0; i < 3; i++) ...[0xff, 0xfb, 0x90, 0x64, ...Uint8List(413)],
+  ]);
+}
+
 void main() {
   late Directory tmp;
   late LocalSource src;
@@ -168,6 +209,76 @@ void main() {
     expect(page.tracks.every((t) => t.source == 'local'), isTrue);
   });
 
+  test(
+    'album artist tags also group untagged tracks in the same album',
+    () async {
+      final root = p.join(tmp.path, 'Compilation');
+      flacWithTags(p.join(root, '01.flac'), {
+        'ALBUM': 'Compilation',
+        'ARTIST': 'Queen',
+        'TITLE': 'Opening',
+      });
+      flacWithTags(p.join(root, '02.flac'), {
+        'ALBUM': 'Compilation',
+        'ALBUMARTIST': 'Various Artists',
+        'ARTIST': 'Queen',
+        'TITLE': 'Finale',
+      });
+      final source = LocalSource(
+        folders: [root],
+        cacheDir: p.join(tmp.path, 'c2'),
+      );
+      await source.scan();
+
+      final albums = (await source.home()).sections
+          .firstWhere((s) => s.title == '专辑')
+          .albums;
+      expect(albums.map((a) => a.artists.single.name), ['Various Artists']);
+      final page = await source.album(albums.single.id);
+      expect(page.tracks.map((t) => t.name), ['Opening', 'Finale']);
+      expect(page.tracks.map((t) => t.artistNames), ['Queen', 'Queen']);
+    },
+  );
+
+  test('same-title albums with different album artists stay separate', () async {
+      final root = p.join(tmp.path, 'Shared folder');
+      for (final artist in ['Queen', 'Smile']) {
+        flacWithTags(p.join(root, '$artist.flac'), {
+          'ALBUM': 'Greatest Hits',
+          'ALBUMARTIST': artist,
+          'ARTIST': artist,
+          'TITLE': artist,
+        });
+      }
+      flacWithTags(p.join(root, 'Encore.flac'), {
+        'ALBUM': 'Greatest Hits',
+        'ARTIST': 'Queen',
+        'TITLE': 'Encore',
+      });
+      final source = LocalSource(
+        folders: [root],
+        cacheDir: p.join(tmp.path, 'c2'),
+      );
+      await source.scan();
+
+      final albums = (await source.home()).sections
+          .firstWhere((s) => s.title == '专辑')
+          .albums;
+      expect(
+        albums.map((a) => a.artists.single.name),
+        unorderedEquals(['Queen', 'Smile']),
+      );
+      for (final album in albums) {
+        final artist = album.artists.single.name;
+        final page = await source.album(album.id);
+        expect(
+          page.tracks.map((t) => t.name),
+          unorderedEquals([artist, if (artist == 'Queen') 'Encore']),
+        );
+      }
+    },
+  );
+
   // 分碟子文件夹里的歌，自己没有封面时退回专辑文件夹的封面。
   test('disc tracks use their own cover or the album folder cover', () async {
     final albumFolder = p.join(music, 'Multi-disc');
@@ -218,6 +329,35 @@ void main() {
     },
   );
 
+  test('albums use embedded art from a later track', () async {
+    final albumFolder = p.join(music, 'Embedded');
+    const embedded = [0xFF, 0xD8, 0xFF, 0xD9];
+    wav(
+      p.join(albumFolder, '01.wav'),
+      info: {'INAM': 'Opening', 'IPRD': 'Embedded', 'ITRK': '1'},
+    );
+    wav(
+      p.join(albumFolder, '02.wav'),
+      info: {'INAM': 'Finale', 'IPRD': 'Embedded', 'ITRK': '2'},
+      cover: embedded,
+    );
+    await src.scan();
+
+    final albums = await src.search('Embedded', SearchKind.albums);
+    final album = albums.albums.single;
+    final page = await src.album(album.id);
+    expect(page.tracks.map((t) => t.name), ['Opening', 'Finale']);
+    expect(page.tracks.first.album.imageUrl, isEmpty);
+    final image = page.tracks.last.album.imageUrl;
+    expect(image, isNotEmpty);
+    expect(File.fromUri(Uri.parse(image)).readAsBytesSync(), embedded);
+    expect(
+      [album.imageUrl, page.album.imageUrl],
+      [image, image],
+      reason: 'The album summary and detail should use the later track’s art',
+    );
+  });
+
   // 文件夹封面优先于内嵌封面；子文件夹封面又优先于专辑文件夹封面。
   test('folder covers take precedence over embedded art', () async {
     final albumFolder = p.join(music, 'Embedded');
@@ -242,6 +382,43 @@ void main() {
     expect(await cover(), discCover.path);
   });
 
+  for (final restart in [true, false]) {
+    test(
+      'refreshes same-size embedded art on ${restart ? 'restart' : 'rescan'}',
+      () async {
+        final path = p.join(music, 'Embedded', 'track.wav');
+        const before = [0xFF, 0xD8, 1, 0xFF, 0xD9];
+        const after = [0xFF, 0xD8, 2, 0xFF, 0xD9];
+        File writeTrack(List<int> cover) =>
+            wav(path, info: {'IPRD': 'Embedded'}, cover: cover);
+
+        Future<String> scanCover(LocalSource source) async {
+          await source.scan();
+          return (await source.search(
+            'Embedded',
+            SearchKind.albums,
+          )).albums.single.imageUrl;
+        }
+
+        final track = writeTrack(before);
+        final size = track.lengthSync();
+        final modified = track.lastModifiedSync();
+        final oldCover = await scanCover(src);
+        expect(File.fromUri(Uri.parse(oldCover)).readAsBytesSync(), before);
+
+        writeTrack(after).setLastModifiedSync(modified);
+        expect(track.lengthSync(), size);
+        final source = restart
+            ? LocalSource(folders: src.folders, cacheDir: src.cacheDir)
+            : src;
+        final newCover = await scanCover(source);
+        expect(File.fromUri(Uri.parse(newCover)).readAsBytesSync(), after);
+        expect(newCover, isNot(oldCover));
+        expect(await scanCover(source), newCover);
+      },
+    );
+  }
+
   // 没标签的文件：去掉曲目号前缀，按 "艺人 - 歌名" 拆开，不归入任何专辑。
   test('untagged file falls back to filename', () async {
     final r = await src.search('晚風', SearchKind.tracks);
@@ -261,6 +438,42 @@ void main() {
     );
   });
 
+  for (final (label, tpe1, tpe2, trackArtists, albumArtist) in [
+    (
+      'different TPE1 and TPE2',
+      'Track Artist / Guest',
+      'Album Artist',
+      ['Track Artist', 'Guest'],
+      'Album Artist',
+    ),
+    ('TPE1 only', 'Track Artist', null, ['Track Artist'], 'Track Artist'),
+    ('TPE2 only', null, 'Album Artist', <String>[], 'Album Artist'),
+  ]) {
+    test('MP3 credits with $label', () async {
+      _taggedMp3(p.join(music, 'Credit Sample.MP3'), {
+        'TIT2': 'Credit Sample',
+        'TALB': 'Credit Compilation',
+        'TPE1': ?tpe1,
+        'TPE2': ?tpe2,
+      });
+      await src.scan();
+
+      final libraryTrack = (await src.home()).sections.first.tracks.firstWhere(
+        (track) => track.name == 'Credit Sample',
+      );
+      expect(libraryTrack.artists.map((a) => a.name), trackArtists);
+      expect(libraryTrack.album.artists.single.name, albumArtist);
+
+      final found = await src.search('Credit Sample', SearchKind.tracks);
+      expect(found.tracks.single.artists.map((a) => a.name), trackArtists);
+      expect(
+        (await src.search('Track Artist', SearchKind.tracks)).total,
+        tpe1 == null ? 0 : 1,
+      );
+      expect((await src.search('Album Artist', SearchKind.tracks)).total, 0);
+    });
+  }
+
   // 同名 .lrc 作为歌词，同时间戳的第二行是翻译。
   test('sidecar lrc lyrics', () async {
     final t = (await src.search('晚風', SearchKind.tracks)).tracks.single;
@@ -272,6 +485,30 @@ void main() {
       )).isEmpty,
       isTrue,
     );
+  });
+
+  test('reads sidecar lyrics with an uppercase extension', () async {
+    final t = (await src.search('Snooze', SearchKind.tracks)).tracks.single;
+    final base = p.withoutExtension(t.id);
+    const lrc = '[00:00.50]Uppercase sidecar';
+    File('$base.LRC').writeAsStringSync(lrc);
+
+    expect((await src.lyrics(t.id)).lrc, lrc);
+
+    const lowercase = '[00:00.50]Lowercase sidecar';
+    File('$base.lrc').writeAsStringSync(lowercase);
+
+    expect((await src.lyrics(t.id)).lrc, lowercase);
+  });
+
+  test('reads sidecar translation with a mixed-case extension', () async {
+    final t = (await src.search('Snooze', SearchKind.tracks)).tracks.single;
+    final base = p.withoutExtension(t.id);
+    const translation = '[00:00.50]Mixed-case translation';
+    File('$base.lrc').writeAsStringSync('[00:00.50]Original');
+    File('$base.TrAnS.LRC').writeAsStringSync(translation);
+
+    expect((await src.lyrics(t.id)).translation, translation);
   });
 
   // 通过 Sources 按歌曲的来源路由到本地源，拿到 file:// 地址；文件删掉后报 unavailable。
@@ -350,6 +587,39 @@ void main() {
       ]);
     },
   );
+
+  test('sorts album tracks by disc folder unless a disc is tagged', () async {
+    const albumName = 'Two Disc Set';
+    for (final (folder, title, track, disc) in [
+      ('CD1', 'D1T1', 1, null),
+      ('CD1', 'D1T2', 2, null),
+      ('CD2', 'D2T1', 1, null),
+      ('CD2', 'D2T2', 2, null),
+      ('CD1', 'Tagged disc 3', 1, 3),
+      ('dIsK 10', 'D10T1', 1, null),
+    ]) {
+      flacWithTags(p.join(music, albumName, folder, '$title.flac'), {
+        'TITLE': title,
+        'ARTIST': 'Artist',
+        'ALBUM': albumName,
+        'TRACKNUMBER': '$track',
+        if (disc != null) 'DISCNUMBER': '$disc',
+      });
+    }
+    await src.scan();
+    final album = (await src.home()).sections
+        .firstWhere((s) => s.title == '专辑')
+        .albums
+        .singleWhere((a) => a.name == albumName);
+    expect((await src.album(album.id)).tracks.map((t) => t.name), [
+      'D1T1',
+      'D1T2',
+      'D2T1',
+      'D2T2',
+      'Tagged disc 3',
+      'D10T1',
+    ]);
+  });
 
   // 进度统计读过的每个文件；文件夹不存在只当空的，不算读不了。
   test('reports progress and treats missing folders as empty', () async {
@@ -436,4 +706,75 @@ void main() {
       expect(fnv1a(k), matches(RegExp(r'^[0-9a-f]{16}$')));
     }
   });
+  // 回归：点击本地专辑上署名、但自己没有歌曲的艺人，曾抛出 Artist not found。
+  test(
+    'album-credit-only artist resolves with credited albums and no tracks',
+    () async {
+      final root = p.join(tmp.path, 'AlbumCredit');
+      flacWithTags(p.join(root, '04-tribute.flac'), {
+        'TITLE': 'Scout Guest Feature',
+        'ARTIST': 'Scout Guest',
+        'ALBUM': 'Scout Tribute',
+        'ALBUMARTIST': 'Scout Director',
+        'DATE': '2024',
+        'TRACKNUMBER': '1',
+      });
+      final s = LocalSource(folders: [root], cacheDir: p.join(tmp.path, 'c7'));
+      await s.scan();
+
+      final album = (await s.library(SearchKind.albums)).albums.single;
+      expect(album.artists.single.name, 'Scout Director');
+
+      final director = await s.artist(album.artists.single.id);
+      expect(director.artist.name, 'Scout Director');
+      expect(director.tracks, isEmpty);
+      expect(director.albums.map((a) => a.name), ['Scout Tribute']);
+
+      final guest = await s.artist(LocalSource.artistId('Scout Guest'));
+      expect(guest.artist.name, 'Scout Guest');
+      expect(guest.tracks.map((t) => t.name), ['Scout Guest Feature']);
+      expect(guest.albums.map((a) => a.name), ['Scout Tribute']);
+
+      await expectLater(
+        s.artist(LocalSource.artistId('Nobody')),
+        throwsA(
+          isA<SourceError>().having(
+            (e) => e.kind,
+            'kind',
+            SourceErrorKind.failed,
+          ),
+        ),
+      );
+    },
+  );
+
+  // 既有演唱曲目、又有专辑署名的艺人：只保留自己的歌，专辑去重并按最新在前。
+  test('artist with performed tracks and album-only credits merges albums without attributing guest tracks', () async {
+    final root = p.join(tmp.path, 'MixedCredit');
+    flacWithTags(p.join(root, 'solo.flac'), {
+      'TITLE': 'Solo Track',
+      'ARTIST': 'Curator',
+      'ALBUM': 'Solo LP',
+      'ALBUMARTIST': 'Curator',
+      'DATE': '2021',
+    });
+    flacWithTags(p.join(root, 'tribute.flac'), {
+      'TITLE': 'Guest Song',
+      'ARTIST': 'Guest Singer',
+      'ALBUM': 'Tribute Compilation',
+      'ALBUMARTIST': 'Curator',
+      'DATE': '2024',
+    });
+    final s = LocalSource(folders: [root], cacheDir: p.join(tmp.path, 'c8'));
+    await s.scan();
+
+    final curator = await s.artist(LocalSource.artistId('Curator'));
+    expect(curator.artist.name, 'Curator');
+    expect(curator.tracks.map((t) => t.name), ['Solo Track']);
+    expect(curator.albums.map((a) => a.name), [
+      'Tribute Compilation',
+      'Solo LP',
+    ]);
+  });
+
 }
