@@ -1,8 +1,12 @@
 import 'package:flutter/widgets.dart';
 
 import '../data.dart';
+import '../cache/requests.dart';
 import '../l10n/l10n.dart';
 import '../menus.dart';
+import '../music/models.dart' as m;
+import '../music/source.dart';
+import '../shell.dart' show MiniPlayer;
 import '../state.dart';
 import '../theme.dart';
 import '../ui.dart';
@@ -65,30 +69,18 @@ class AlbumPage extends StatelessWidget {
               children: [
                 SizedBox(
                   width: 400,
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      const SizedBox(height: 20),
-                      BackBtn(onTap: app.back),
-                      const SizedBox(height: 36),
-                      FadeIn(
-                        dy: 20,
-                        child: Container(
-                          decoration: squircle(
-                            20,
-                            shadows: [
-                              BoxShadow(
-                                color: ba(0.67),
-                                blurRadius: 60,
-                                offset: const Offset(0, 24),
-                                spreadRadius: -10,
-                              ),
-                            ],
-                          ),
-                          child: Cover(al.cover, w: 400, h: 400, r: 20),
-                        ),
-                      ),
-                      const SizedBox(height: 16),
+                  child: Padding(
+                    padding: EdgeInsets.only(
+                      bottom: app.hasQueue ? MiniPlayer.bottomInset : 0,
+                    ),
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        const SizedBox(height: 20),
+                        BackBtn(onTap: app.back),
+                        const SizedBox(height: 36),
+                        Flexible(child: _AlbumCover(id: al.cover)),
+                        const SizedBox(height: 16),
                       tx(
                         al.year > 0 ? '$kind · ${al.year}' : kind,
                         13,
@@ -119,7 +111,10 @@ class AlbumPage extends StatelessWidget {
                         builder: (_, h, _) => Row(
                           mainAxisSize: MainAxisSize.min,
                           children: [
-                            Cover(al.cover, w: 28, h: 28, r: 14),
+                            _AlbumArtistAvatar(
+                              image: al.artistImage,
+                              route: al.artistRoute,
+                            ),
                             const SizedBox(width: 10),
                             AnimatedDefaultTextStyle(
                               duration: fast,
@@ -161,7 +156,8 @@ class AlbumPage extends StatelessWidget {
                           ),
                         ],
                       ),
-                    ],
+                      ],
+                    ),
                   ),
                 ),
                 const SizedBox(width: 64),
@@ -239,6 +235,97 @@ String _footer(Album al, AppLocalizations l) {
       ? l.albumReleasedIn(al.year)
       : '';
   return [date, al.copyright].where((s) => s.isNotEmpty).join('\n');
+}
+
+class _AlbumCover extends StatelessWidget {
+  const _AlbumCover({required this.id});
+
+  final String id;
+
+  @override
+  Widget build(BuildContext context) => AspectRatio(
+    aspectRatio: 1,
+    child: LayoutBuilder(
+      builder: (_, constraints) {
+        final size = constraints.maxWidth;
+        final scale = size / 400;
+        final radius = 20 * scale;
+        return FadeIn(
+          dy: 20,
+          child: Container(
+            decoration: squircle(
+              radius,
+              shadows: [
+                BoxShadow(
+                  color: ba(0.67),
+                  blurRadius: 60 * scale,
+                  offset: Offset(0, 24 * scale),
+                  spreadRadius: -10 * scale,
+                ),
+              ],
+            ),
+            child: Cover(id, w: size, h: size, r: radius),
+          ),
+        );
+      },
+    ),
+  );
+}
+
+class _AlbumArtistAvatar extends StatefulWidget {
+  const _AlbumArtistAvatar({required this.image, required this.route});
+  final String image, route;
+
+  @override
+  State<_AlbumArtistAvatar> createState() => _AlbumArtistAvatarState();
+}
+
+class _AlbumArtistAvatarState extends State<_AlbumArtistAvatar> {
+  String? _target;
+  Future<m.ArtistPage>? _request;
+
+  Widget _avatar(String image) => image.isNotEmpty
+      ? Cover(image, w: 28, h: 28, r: 14)
+      : Container(
+          width: 28,
+          height: 28,
+          alignment: Alignment.center,
+          decoration: squircle(14, color: P.raised),
+          child: Ico('user', size: 16, color: _faint),
+        );
+
+  @override
+  Widget build(BuildContext context) {
+    final app = context.app;
+    // Use the same artist identity as the adjacent navigation link. Album responses
+    // often omit the avatar or supply the service's generic artist image.
+    final parts = Uri.tryParse(widget.route)?.pathSegments ?? const <String>[];
+    if (parts.length != 3 ||
+        parts[0] != 'artist' ||
+        !parts[1].startsWith('@')) {
+      return _avatar(widget.image);
+    }
+    final source = parts[1].substring(1), artist = parts[2];
+    if (artist.isEmpty || !(app.sources[source]?.can(Op.artist) ?? false)) {
+      return _avatar(widget.image);
+    }
+    final target = '${app.cacheSpace(source)}/$artist';
+    if (_target != target) {
+      _target = target;
+      _request = null;
+    }
+    final req = DataReq.artist(source, artist);
+    _request ??= app.getData(req);
+    return FutureBuilder<m.ArtistPage>(
+      key: ValueKey(target),
+      future: _request,
+      builder: (context, snapshot) {
+        final image =
+            (app.peekData(req) ?? snapshot.data)?.artist.imageUrl ?? '';
+        return _avatar(image.isNotEmpty ? image : widget.image);
+      },
+    );
+  }
 }
 
 class _AlbumTrackRow extends StatelessWidget {

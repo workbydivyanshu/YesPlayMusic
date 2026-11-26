@@ -613,6 +613,10 @@ class _Seg extends StatelessWidget {
 
 class MiniPlayer extends StatefulWidget {
   const MiniPlayer({super.key, this.onDark = false, this.collapse = false});
+
+  /// Clear space below page controls, including the fade above the bar.
+  static const bottomInset = 110.0;
+
   final bool onDark;
 
   /// Coverflow 里在最左加「收起」（定稿 v33）；队列为空时只剩这一段
@@ -647,7 +651,7 @@ class _MiniPlayerState extends State<MiniPlayer> {
             left: 0,
             right: 0,
             bottom: 0,
-            height: 110,
+            height: MiniPlayer.bottomInset,
             child: IgnorePointer(
               child: DecoratedBox(
                 decoration: BoxDecoration(

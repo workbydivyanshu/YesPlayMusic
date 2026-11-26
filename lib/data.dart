@@ -101,6 +101,7 @@ class Album {
     required this.spine,
     this.kind = '',
     this.artistRoute = '',
+    this.artistImage = '',
     this.added,
     this.released,
     this.copyright = '',
@@ -113,6 +114,9 @@ class Album {
 
   /// 点歌手名去的页面；为空时不能点。
   final String artistRoute;
+
+  /// 第一位署名艺人的头像，和专辑封面分开。
+  final String artistImage;
   final int year;
   final double spine; // 书脊宽度
 
@@ -132,6 +136,7 @@ class Album {
     spine: spine,
     kind: kind,
     artistRoute: artistRoute,
+    artistImage: artistImage,
     added: added,
     released: d,
     copyright: copyright,
