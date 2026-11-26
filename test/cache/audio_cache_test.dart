@@ -1,8 +1,10 @@
 import 'dart:async';
+import 'dart:convert';
 import 'dart:io';
 import 'dart:typed_data';
 
 import 'package:flutter_test/flutter_test.dart';
+import 'package:path/path.dart' as p;
 import 'package:yesplaymusic/cache/audio_cache.dart';
 import 'package:yesplaymusic/music/models.dart';
 
@@ -200,9 +202,17 @@ void main() {
           'src@a/$i',
           AudioStream(url: '$baseUrl/$i.mp3', type: 'mp3'),
         );
-        final got = await c.get('src@a/$i');
-        File(Uri.parse(got!.url).toFilePath())
-            .setLastModifiedSync(DateTime(2026, 1, 1, 0, i));
+      }
+
+      // 直接扫临时目录取文件回填 mtime，避免用 c.get 触发未 await 的
+      // mtime 触碰竞态；按 key 序号给固定的 UTC 时间，保证 LRU 顺序确定。
+      final files = tmp.listSync(recursive: true).whereType<File>().toList();
+      for (final f in files) {
+        if (!f.path.endsWith('.json')) continue;
+        final j = jsonDecode(f.readAsStringSync()) as Map;
+        final i = int.parse((j['key'] as String).split('/').last);
+        File(p.join(f.parent.path, '${j['file']}'))
+            .setLastModifiedSync(DateTime.utc(2000, 1, 1, 0, i));
       }
 
       await c.trim();

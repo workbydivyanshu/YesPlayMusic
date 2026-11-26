@@ -204,4 +204,31 @@ void main() {
       2,
     ]);
   });
+
+  test('repeated stamps separated by spaces expand into clean lyrics', () {
+    final ls = parseLrc('[00:02.00] [00:18.00]chorus');
+    expect(ls.map((l) => (l.start, l.text)), [(2000, 'chorus'), (18000, 'chorus')]);
+  });
+
+  // 相同时间戳的原文/翻译行必须保持输入顺序（稳定排序）。
+  test('mergeSort keeps input order for equal timestamps', () {
+    final buf = StringBuffer();
+    for (var i = 0; i < 24; i++) {
+      final ss = (i + 1).toString().padLeft(2, '0');
+      buf.writeln('[00:$ss.00]orig$i');
+      buf.writeln('[00:$ss.00]trans$i');
+    }
+    final ls = parseLrc(buf.toString());
+    expect(ls.length, 48);
+    for (var i = 0; i < 24; i++) {
+      final oi = ls.indexWhere((l) => l.text == 'orig$i');
+      final ti = ls.indexWhere((l) => l.text == 'trans$i');
+      expect(oi, isNonNegative);
+      expect(ti, isNonNegative);
+      expect(oi, lessThan(ti));
+    }
+    for (var i = 1; i < ls.length; i++) {
+      expect(ls[i].start, greaterThanOrEqualTo(ls[i - 1].start));
+    }
+  });
 }

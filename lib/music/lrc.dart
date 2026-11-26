@@ -9,7 +9,7 @@ import 'package:flutter/foundation.dart';
 
 import 'models.dart';
 
-final _stamp = RegExp(r'\[(\d{1,3}):(\d{1,2})(?:[.:](\d{1,3}))?\]');
+final _stamp = RegExp(r'\s*\[(\d{1,3}):(\d{1,2})(?:[.:](\d{1,3}))?\]');
 final _word = RegExp(r'<(\d{1,3}):(\d{1,2})(?:[.:](\d{1,3}))?>');
 final _offset = RegExp(r'^\[offset:\s*([+-]?\d+)\s*\]', caseSensitive: false);
 
@@ -51,7 +51,7 @@ List<LyricLine> parseLrc(String lrc) {
       out.add(LyricLine(start: start, text: text, words: _shift(words, -offset)));
     }
   }
-  out.sort((a, b) => a.start.compareTo(b.start));
+  mergeSort(out, compare: (a, b) => a.start.compareTo(b.start));
   return out;
 }
 

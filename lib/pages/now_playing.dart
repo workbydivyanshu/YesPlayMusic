@@ -792,6 +792,7 @@ class _LyricsState extends State<_Lyrics> with SingleTickerProviderStateMixin {
         final ls = app.lyricLines;
         if (ls.isEmpty) return const SizedBox.shrink();
         final playing = app.lyricIndex;
+        final anchorRow = playing >= 0 ? playing : 0;
         return LayoutBuilder(
           builder: (context, box) {
             const maxW = 760.0;
@@ -858,14 +859,14 @@ class _LyricsState extends State<_Lyrics> with SingleTickerProviderStateMixin {
             final tops = _scrolling ? browseTops : followTops;
             // 当前行放在区域约 30% 的高度上
             final anchor = box.maxHeight * 0.30;
-            final follow = followTops[playing] - anchor;
+            final follow = followTops[anchorRow] - anchor;
             // 往上最多滚到第一行露在顶部渐变下面，往下最多滚到最后一行停在锚点
             final minOff = -(box.maxHeight * 0.08 + 24);
             final maxOff = math.max(minOff, browseTops.last - anchor);
             final offset = _scrolling ? _abs : follow;
             // 开始滚动时当前行缩小，但位置不动，下面的行往上收
             void scroll(double dy) =>
-                _scrollBy(dy, browseTops[playing] - anchor, minOff, maxOff);
+                _scrollBy(dy, browseTops[anchorRow] - anchor, minOff, maxOff);
 
             return Listener(
               onPointerSignal: (e) {

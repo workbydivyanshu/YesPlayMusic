@@ -2700,6 +2700,11 @@ class AppState extends ChangeNotifier {
   /// 跳到 [frac]（0~1）。拖进度条时在松手时调用。
   void seek(double frac) => seekTo(frac.clamp(0.0, 1.0) * playbackDuration);
 
+  void _seekEngine(Duration to) {
+    _seeking++;
+    _eng.seek(to).whenComplete(() => _seeking--);
+  }
+
   void seekTo(double seconds) {
     _scrubbing = false;
     final total = playbackDuration;
@@ -2707,10 +2712,7 @@ class AppState extends ChangeNotifier {
     position = seconds.clamp(0.0, total);
     _playbackSoon(force: true);
     if (_engineOnTrack) {
-      _seeking++;
-      _eng
-          .seek(Duration(milliseconds: (position * 1000).round()))
-          .whenComplete(() => _seeking--);
+      _seekEngine(Duration(milliseconds: (position * 1000).round()));
     }
   }
 
@@ -2835,9 +2837,16 @@ class AppState extends ChangeNotifier {
 
   void playQueueAt(int i) {
     if (queue.isEmpty) return;
+    final previous = index;
     index = i.clamp(0, queue.length - 1);
     position = 0;
     playing = true;
+    if (index != previous && _engineOnTrack) {
+      _scrubbing = false;
+      _scrobbler.reset();
+      _seekEngine(Duration.zero);
+      _playbackSoon(force: true);
+    }
     notifyListeners();
     _sync();
   }
@@ -3519,12 +3528,13 @@ class AppState extends ChangeNotifier {
     return true;
   }
 
-  /// 正在唱的那一行。读 [position]，所以要放在 [pos] 的监听里用。
+  /// The line being sung, or -1 before the first line starts (or when there are no lyrics).
   int get lyricIndex {
     final ls = lyricLines;
-    if (ls.isEmpty) return 0;
+    if (ls.isEmpty) return -1;
     final ms = (position * 1000).round() - currentLyricsOffset;
-    var lo = 0, hi = ls.length - 1, ans = 0;
+    if (ms < ls.first.start) return -1;
+    var lo = 0, hi = ls.length - 1, ans = -1;
     while (lo <= hi) {
       final mid = (lo + hi) >> 1;
       if (ls[mid].start <= ms) {

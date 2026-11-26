@@ -30,6 +30,18 @@ class _Local extends Source {
       m.AudioStream(url: 'file:///music/$id.flac', type: 'flac', gain: -5);
 }
 
+/// Fake source: records every nowPlaying broadcast (a new listen).
+class _Recorder extends Source {
+  _Recorder(this.log);
+  final List<String> log;
+  @override
+  final m.SourceInfo info = const m.SourceInfo(id: 'rec', name: 'rec');
+  @override
+  final Set<String> ops = {Op.nowPlaying};
+  @override
+  Future<void> nowPlaying(m.Track track) async => log.add(track.key);
+}
+
 /// Fake engine: records opened / queued tracks; [finish] simulates the current track ending.
 class _Engine implements PlaybackEngine {
   final opened = <String>[];
@@ -428,5 +440,35 @@ void main() {
     await Future<void>.delayed(const Duration(milliseconds: 500));
     expect(app.playing, isFalse);
     expect(engine.fade, 1);
+  });
+
+  test('selecting a queued copy restarts the loaded song', () async {
+    await start(['a', 'a']);
+    engine.at(30);
+    await _tick();
+    expect(engine.sought, isNull);
+
+    app.playQueueAt(1);
+    await _tick();
+    expect(app.index, 1);
+    // Same song (a duplicate queue entry): the engine is restarted from 0.
+    expect(engine.sought, Duration.zero);
+  });
+
+  test('selecting a queued copy counts as a new listen', () async {
+    final log = <String>[];
+    app.sources.add(_Recorder(log));
+    await start(['a', 'a']);
+
+    engine.at(30);
+    await _tick();
+    expect(log, [_key('a')]);
+
+    app.playQueueAt(1);
+    await _tick();
+    engine.at(31);
+    await _tick();
+    // The scrobbler was reset, so the copy is reported as a fresh listen.
+    expect(log, [_key('a'), _key('a')]);
   });
 }

@@ -58,7 +58,10 @@ class AudioEngine implements PlaybackEngine {
       _p.stream.duration.listen((d) => onDuration?.call(d)),
       _p.stream.playing.listen((v) => onPlaying?.call(v)),
       _p.stream.completed.listen((done) {
-        if (done && _queuedKey == null) onCompleted?.call();
+        if (!done || _queuedKey != null) return;
+        // media_kit restarts at playlist index 0 after EOF.
+        _prunePlayedTracks().ignore();
+        onCompleted?.call();
       }),
       _p.stream.error.listen((e) => onError?.call(e)),
       _p.stream.playlist.listen(_onPlaylist),
@@ -71,6 +74,8 @@ class AudioEngine implements PlaybackEngine {
     final n = _p.platform;
     if (n is mk.NativePlayer) {
       n.setProperty('prefetch-playlist', 'yes');
+      // Lyrics are loaded by the app; stop mpv auto-loading sidecar .lrc files as subtitles.
+      n.setProperty('sub-auto', 'no');
       n.onLoadHooks.add(_onLoad);
     }
   }
@@ -202,9 +207,15 @@ class AudioEngine implements PlaybackEngine {
   Future<void> queueNext(AudioStream s, {required String key,
       String rg = 'no', double gainDb = 0}) async {
     await dropQueued();
-    for (var i = _p.state.playlist.index - 1; i >= 0; i--) { await _p.remove(i); }
+    await _prunePlayedTracks();
     _queuedKey = key;
     await _p.add(_media(s, key: key, rg: rg, gainDb: gainDb));
+  }
+
+  Future<void> _prunePlayedTracks() async {
+    for (var i = _p.state.playlist.index - 1; i >= 0; i--) {
+      await _p.remove(i);
+    }
   }
 
   @override

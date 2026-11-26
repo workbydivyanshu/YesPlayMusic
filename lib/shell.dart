@@ -1039,8 +1039,11 @@ class _LyricSegState extends State<_LyricSeg> {
             builder: (_, at, dragging) {
               // 迷你歌词设置开启时始终显示歌词；关闭时只在鼠标位于进度条上（或正在拖）时显示。
               // 悬停播放条其他按钮不算。
-              final showLyric =
-                  app.hasLyrics && (app.miniLyric || at != null || dragging);
+              final lyricIdx = app.lyricIndex;
+              final activeLyric =
+                  lyricIdx >= 0 ? app.lyricLines[lyricIdx].text : null;
+              final showLyric = activeLyric != null &&
+                  (app.miniLyric || at != null || dragging);
               // 拖动时左边的时间跟着手走。
               final elapsed = dragging && at != null
                   ? at * duration
@@ -1113,9 +1116,7 @@ class _LyricSegState extends State<_LyricSeg> {
                                 duration: _lyricAnim,
                                 curve: Curves.easeOutCubic,
                                 child: tx(
-                                  app.hasLyrics
-                                      ? app.lyricLines[app.lyricIndex].text
-                                      : '',
+                                  activeLyric ?? '',
                                   14,
                                   w: w600,
                                   c: pal.ink,
