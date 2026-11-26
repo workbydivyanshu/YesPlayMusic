@@ -14,13 +14,13 @@ import 'package:auto_updater/auto_updater.dart';
 import 'package:flutter/foundation.dart';
 import 'package:path/path.dart' as p;
 
+import 'dist.dart';
 import 'l10n/l10n.dart';
 import 'net/proxy.dart';
 import 'state.dart';
 import 'system.dart';
 import 'version.dart';
 
-const _repo = 'workbydivyanshu/YesPlayMusic';
 const _sparkle = bool.fromEnvironment('YPM_SPARKLE');
 
 /// Intel uses a separate feed; Apple Silicon keeps the existing feed URL.
@@ -34,8 +34,8 @@ class Updater extends ChangeNotifier {
   Updater._();
   static final instance = Updater._();
 
-  static const repoPage = 'https://github.com/$_repo';
-  static const releasesPage = 'https://github.com/$_repo/releases';
+  static const repoPage = DistConfig.repoPage;
+  static const releasesPage = DistConfig.releasesPage;
 
   /// 用 Sparkle / WinSparkle 自动更新。
   bool get native => _sparkle && (Platform.isMacOS || Platform.isWindows);
@@ -73,7 +73,7 @@ class Updater extends ChangeNotifier {
     } catch (_) {}
     if (native) {
       await autoUpdater.setFeedURL(
-        'https://github.com/$_repo/releases/latest/download/${appcastFileName(Abi.current())}',
+        DistConfig.appcastUrl(appcastFileName(Abi.current())),
       );
       await autoUpdater.setScheduledCheckInterval(autoCheck ? 86400 : 0);
       if (autoCheck) await autoUpdater.checkForUpdates(inBackground: true);
@@ -138,7 +138,7 @@ class Updater extends ChangeNotifier {
   /// 打开新版本（或所有版本）的下载页。
   void openDownload() => openExternal(latestPage ?? releasesPage);
 
-  /// GitHub 上最新的正式版：(版本号, 页面)。
+  /// 最新的正式版：(版本号, 页面)。
   static Future<(String, String)?> _latestRelease() async {
     final proxy = systemProxy();
     final http = HttpClient()
@@ -146,25 +146,40 @@ class Updater extends ChangeNotifier {
       ..userAgent = 'YesPlayMusic/$appVersion';
     if (proxy != null) http.findProxy = proxy.findProxy;
     try {
-      final req = await http.getUrl(
-        Uri.parse('https://api.github.com/repos/$_repo/releases/latest'),
-      );
-      req.headers.set('Accept', 'application/vnd.github+json');
+      final req = await http.getUrl(DistConfig.latestReleaseUri);
+      if (!DistConfig.isGitLab) {
+        req.headers.set('Accept', 'application/vnd.github+json');
+      }
       final res = await req.close().timeout(const Duration(seconds: 30));
       if (res.statusCode == 404) return null; // 还没有发布过
       if (res.statusCode != 200) throw HttpException('HTTP ${res.statusCode}');
-      final j = jsonDecode(
-        await res
-            .transform(utf8.decoder)
-            .join()
-            .timeout(const Duration(seconds: 30)),
-      ) as Map;
-      final tag = '${j['tag_name'] ?? ''}';
-      if (tag.isEmpty) return null;
-      return (
-        tag.replaceFirst(RegExp(r'^v'), ''),
-        '${j['html_url'] ?? releasesPage}',
-      );
+      final body = await res
+          .transform(utf8.decoder)
+          .join()
+          .timeout(const Duration(seconds: 30));
+      final dynamic decoded = jsonDecode(body);
+      if (DistConfig.isGitLab) {
+        if (decoded is List && decoded.isNotEmpty) {
+          final first = decoded.first;
+          if (first is Map) {
+            final tag = '${first['tag_name'] ?? ''}';
+            if (tag.isEmpty) return null;
+            final links = first['_links'];
+            final selfLink = links is Map ? '${links['self'] ?? ''}' : '';
+            final pageUrl = selfLink.isNotEmpty ? selfLink : DistConfig.releasesPage;
+            return (tag.replaceFirst(RegExp(r'^v'), ''), pageUrl);
+          }
+        }
+        return null;
+      } else {
+        if (decoded is! Map) return null;
+        final tag = '${decoded['tag_name'] ?? ''}';
+        if (tag.isEmpty) return null;
+        return (
+          tag.replaceFirst(RegExp(r'^v'), ''),
+          '${decoded['html_url'] ?? DistConfig.releasesPage}',
+        );
+      }
     } finally {
       http.close(force: true);
     }

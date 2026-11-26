@@ -6,13 +6,14 @@
 
 macOS · Windows · Linux
 
-[![Release](https://img.shields.io/github/v/release/qier222/YesPlayMusic?style=flat-square&color=D6B0FA)](https://github.com/qier222/YesPlayMusic/releases/latest)
-[![CI](https://img.shields.io/github/actions/workflow/status/qier222/YesPlayMusic/ci.yml?branch=main&style=flat-square&label=CI)](https://github.com/qier222/YesPlayMusic/actions/workflows/ci.yml)
+[![Release](https://img.shields.io/github/v/release/workbydivyanshu/YesPlayMusic?style=flat-square&color=D6B0FA)](https://github.com/workbydivyanshu/YesPlayMusic/releases/latest)
+[![Enhanced Edition](https://img.shields.io/badge/Edition-Enhanced%20v3.0.4-8A2BE2?style=flat-square)](https://github.com/workbydivyanshu/YesPlayMusic/releases/latest)
+[![CI](https://img.shields.io/github/actions/workflow/status/workbydivyanshu/YesPlayMusic/ci.yml?branch=main&style=flat-square&label=CI)](https://github.com/workbydivyanshu/YesPlayMusic/actions/workflows/ci.yml)
 [![License](https://img.shields.io/badge/license-GPL--3.0-8FE3C0?style=flat-square)](./LICENSE)
 
 [English](README.md) · 简体中文
 
-[下载](#下载) · [功能](#功能) · [截图](#截图) · [安装插件](#安装插件) · [开发插件](#开发插件) · [AI 助手（MCP）](#ai-助手mcp) · [从源码构建](#从源码构建)
+[下载](#下载) · [增强版特性](#-增强版特性enhanced-edition) · [功能](#功能) · [截图](#截图) · [安装插件](#安装插件) · [开发插件](#开发插件) · [AI 助手（MCP）](#ai-助手mcp) · [从源码构建](#从源码构建)
 
 </div>
 
@@ -24,7 +25,7 @@ YesPlayMusic 3.0 是用 Flutter 从头重写的桌面音乐播放器。
 
 ## 下载
 
-在 [Releases](https://github.com/qier222/YesPlayMusic/releases/latest) 页面下载对应系统的安装包：
+在 [Releases](https://github.com/workbydivyanshu/YesPlayMusic/releases/latest) 页面下载对应系统的安装包：
 
 | 系统              | 文件                                        | 说明                                                                        |
 | ----------------- | ------------------------------------------- | --------------------------------------------------------------------------- |
@@ -33,6 +34,18 @@ YesPlayMusic 3.0 是用 Flutter 从头重写的桌面音乐播放器。
 | Linux x64         | `-linux-x64.tar.gz`                         | 需要系统装有 libmpv：`sudo apt install libmpv2`（较旧的发行版是 `libmpv1`） |
 
 macOS 和 Windows 版本会自动检查更新；Linux 版本在 设置 → 关于 里提示新版本。
+
+## ✨ 增强版特性（Enhanced Edition）
+
+本项目为 YesPlayMusic **增强版（Enhanced Edition）**，在原版基础上针对发烧友播放品质、多源歌词引擎、Linux 原生稳定性以及绝对隐私保护进行了深度重构与强化：
+
+| 核心领域 | 增强特性说明 |
+| --- | --- |
+| 🎵 **Aubade 多源歌词引擎** | **内置 6 大歌词源**（网易云、QQ 音乐、酷狗、酷我、LRCLIB、Bilibili），支持自动备选回退、逐字逐词卡拉 OK 动效、带空格 LRC 时间戳解析与双人合唱空间排版。 |
+| 🎚️ **发烧级无缝播放与调音** | **原生无缝衔接播放（Gapless Playback）**，支持容器时长预载与音频采样修剪；内置 **10 段 ISO 标准图示均衡器**；支持 **ReplayGain** 动态响度均衡与三态无缝单曲/列表循环模式。 |
+| 🎨 **GPU 流畅度与视觉虚拟化** | 虚拟化黑胶唱片架与 3D Coverflow 翻转视图；GPU Canvas 单通道动效歌词渲染；**一键高性能模式**（低开销纯色表面与内存即时回收）；6 款自适应封面主题色。 |
+| 🛡️ **Linux 原生加固与桌面融合** | 针对 Linux mpv 底层引入 LuaJIT SIGSEGV 原生崩溃防护；GTK 启动窗口几何尺寸同步，修复 Wayland 闪退与光标抓取问题；深度支持 MPRIS/SMTC 媒体按键。 |
+| 🔒 **零遥测与纯净隐私保障** | 100% 离线优先架构，**完全剔除所有跟踪与数据遥测**；QuickJS 严格沙箱隔离运行；基于 SQLite 与 LRU 策略的高效本地离线缓存。 |
 
 ## 功能
 
@@ -136,7 +149,7 @@ flutter test
 
 ## 反馈
 
-- 问题和建议请提 [Issue](https://github.com/qier222/YesPlayMusic/issues/new/choose)。
+- 问题和建议请提 [Issue](https://github.com/workbydivyanshu/YesPlayMusic/issues)。
 - 安全问题请私下报告，见 [SECURITY.md](SECURITY.md)。
 - 本项目**不接受 Pull Request**，来自 fork 的 PR 会被自动关闭。
 

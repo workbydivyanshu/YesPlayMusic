@@ -7,6 +7,7 @@ import 'package:file_selector/file_selector.dart';
 import 'package:path/path.dart' as p;
 
 import '../cache/image_cache.dart';
+import '../dist.dart';
 import '../l10n/l10n.dart';
 import '../log.dart';
 import '../mcp/config.dart';
@@ -1064,6 +1065,44 @@ class _About extends StatelessWidget {
     ],
   );
 
+  static Widget _repoLine(String label, Widget right, {String hint = ''}) =>
+      LayoutBuilder(
+        builder: (context, constraints) {
+          if (constraints.maxWidth < 600) {
+            return Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                tx(label, 15, w: w700),
+                if (hint.isNotEmpty) ...[
+                  const SizedBox(height: 4),
+                  tx(hint, 12, w: w500, c: P.faint),
+                ],
+                const SizedBox(height: 12),
+                right,
+              ],
+            );
+          }
+          return Row(
+            children: [
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    tx(label, 15, w: w700),
+                    if (hint.isNotEmpty) ...[
+                      const SizedBox(height: 4),
+                      tx(hint, 12, w: w500, c: P.faint),
+                    ],
+                  ],
+                ),
+              ),
+              const SizedBox(width: 16),
+              right,
+            ],
+          );
+        },
+      );
+
   @override
   Widget build(BuildContext context) {
     final u = Updater.instance;
@@ -1102,15 +1141,29 @@ class _About extends StatelessWidget {
             _gap,
             _rule(),
             _gap,
-            _line(
-              'GitHub',
-              Btn(
-                label: l.aboutOpen,
-                size: BtnSize.m,
-                kind: BtnKind.secondary,
-                onTap: () => openExternal(Updater.repoPage),
+            _repoLine(
+              DistConfig.repositoryTitle(l),
+              Wrap(
+                spacing: 8,
+                runSpacing: 8,
+                alignment: WrapAlignment.end,
+                crossAxisAlignment: WrapCrossAlignment.center,
+                children: [
+                  Btn(
+                    label: DistConfig.upstreamLabel(l),
+                    size: BtnSize.m,
+                    kind: BtnKind.secondary,
+                    onTap: () => openExternal(DistConfig.upstreamRepoUrl),
+                  ),
+                  Btn(
+                    label: DistConfig.enhancedLabel(l),
+                    size: BtnSize.m,
+                    kind: BtnKind.primary,
+                    onTap: () => openExternal(DistConfig.repoPage),
+                  ),
+                ],
               ),
-              hint: l.aboutSourceAndFeedback,
+              hint: DistConfig.sourceHint(l),
             ),
             _gap,
             _rule(),
@@ -1286,8 +1339,7 @@ class _StorageState extends State<_Storage> {
 
 // ───────────── 插件设置页（Sketch 定稿「v31 / 设置 · 插件（卡片）」） ─────────────
 
-const _docsUrl =
-    'https://github.com/workbydivyanshu/YesPlayMusic/blob/main/docs/plugins.md';
+final _docsUrl = DistConfig.docsUrl;
 const _findPluginsUrl =
     'https://github.com/search?q=topic%3Ayesplaymusic-plugin&type=repositories';
 

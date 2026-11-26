@@ -7,6 +7,7 @@
 macOS · Windows · Linux
 
 [![Release](https://img.shields.io/github/v/release/workbydivyanshu/YesPlayMusic?style=flat-square&color=D6B0FA)](https://github.com/workbydivyanshu/YesPlayMusic/releases/latest)
+[![Enhanced Edition](https://img.shields.io/badge/Edition-Enhanced%20v3.0.4-8A2BE2?style=flat-square)](https://github.com/workbydivyanshu/YesPlayMusic/releases/latest)
 [![CI](https://img.shields.io/github/actions/workflow/status/workbydivyanshu/YesPlayMusic/ci.yml?branch=main&style=flat-square&label=CI)](https://github.com/workbydivyanshu/YesPlayMusic/actions/workflows/ci.yml)
 [![License](https://img.shields.io/badge/license-GPL--3.0-8FE3C0?style=flat-square)](./LICENSE)
 
@@ -34,6 +35,18 @@ Download the package for your system from [Releases](https://github.com/workbydi
 | Linux x64 | `-linux-x64.tar.gz` | Tarball bundle; requires libmpv: `sudo apt install libmpv2` (`libmpv1` on older distributions) |
 
 The macOS and Windows builds check for updates automatically; on Linux, new versions are shown in Settings → About.
+
+## ✨ Enhanced Edition Additions
+
+This repository is an **Enhanced Edition** of YesPlayMusic, built with deep audiophile playback improvements, an advanced multi-source lyrics engine, native Linux stability hardening, and strict privacy guarantees:
+
+| Pillar | Enhancement Highlights |
+| --- | --- |
+| 🎵 **Aubade Lyrics Engine** | **6 Online Lyric Sources** (Netease, QQ Music, Kugou, Kuwo, LRCLIB, Bilibili) with automatic priority fallback, word-by-word synchronized karaoke timing, space-separated LRC timestamp support, and spatial duet staging. |
+| 🎚️ **Audiophile Playback** | **True Gapless Playback** with mpv stream pre-loading and sample pruning; **10-Band ISO Graphic Equalizer**; dynamic **ReplayGain** loudness normalization; 3-state seamless loop toggle (`Repeat All` / `Repeat One` / `Repeat Off`). |
+| 🎨 **Visual & GPU Performance** | Virtualized record-shelf & 3D Coverflow; single-pass GPU canvas kinetic lyric animations; **1-Click Performance Mode** for minimal CPU/GPU overhead; 6 cover-art adaptive theme palettes. |
+| 🛡️ **Linux & Desktop Hardening** | Native LuaJIT SIGSEGV runtime crash guard; Wayland launch window synchronization and pointer drag grab safety; system tray and MPRIS/SMTC media key integration. |
+| 🔒 **Privacy & Zero Telemetry** | 100% offline-first architecture; **Zero tracking or telemetry**; sandboxed QuickJS plugin security; deterministic local SQLite caching with strict LRU budgets. |
 
 ## Features
 
