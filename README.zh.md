@@ -6,6 +6,7 @@
 
 macOS · Windows · Linux
 
+[![Website](https://img.shields.io/badge/Website-yesplaymusic--website.vercel.app-555555?style=flat-square&logo=vercel)](https://yesplaymusic-website.vercel.app)
 [![Release](https://img.shields.io/github/v/release/workbydivyanshu/YesPlayMusic?style=flat-square&color=D6B0FA)](https://github.com/workbydivyanshu/YesPlayMusic/releases/latest)
 [![Enhanced Edition](https://img.shields.io/badge/Edition-Enhanced%20v3.0.5-8A2BE2?style=flat-square)](https://github.com/workbydivyanshu/YesPlayMusic/releases/latest)
 [![CI](https://img.shields.io/github/actions/workflow/status/workbydivyanshu/YesPlayMusic/ci.yml?branch=main&style=flat-square&label=CI)](https://github.com/workbydivyanshu/YesPlayMusic/actions/workflows/ci.yml)
@@ -13,7 +14,7 @@ macOS · Windows · Linux
 
 [English](README.md) · 简体中文
 
-[下载](#下载) · [增强版特性](#-增强版特性enhanced-edition) · [功能](#功能) · [截图](#截图) · [安装插件](#安装插件) · [开发插件](#开发插件) · [AI 助手（MCP）](#ai-助手mcp) · [从源码构建](#从源码构建)
+[官方网站](https://yesplaymusic-website.vercel.app) · [下载](#下载) · [增强版特性](#-增强版特性enhanced-edition) · [功能](#功能) · [截图](#截图) · [安装插件](#安装插件) · [开发插件](#开发插件) · [AI 助手（MCP）](#ai-助手mcp) · [从源码构建](#从源码构建)
 
 </div>
 
@@ -111,7 +112,7 @@ macOS 和 Windows 版本会自动检查更新；Linux 版本在 设置 → 关�
 
 一个插件就是一份 `plugin.json` 加一个 JavaScript 模块，导出哪些函数，应用就显示哪些功能。
 
-首页和发现页由插件自己组织：应用内置了多种组件（特殊模式卡片、横向卡片架、歌曲翻页网格、排行榜、卡片网格），插件可以自由组合。需要其他形态的组件，请[提 Issue](https://github.com/qier222/YesPlayMusic/issues/new/choose)。
+首页和发现页由插件自己组织：应用内置了多种组件（特殊模式卡片、横向卡片架、歌曲翻页网格、排行榜、卡片网格），插件可以自由组合。需要其他形态的组件，请[提 Issue](https://github.com/workbydivyanshu/YesPlayMusic/issues/new/choose)。
 
 完整接口见 [插件开发指南](docs/plugins.md)。
 
@@ -134,7 +135,7 @@ macOS 和 Windows 版本会自动检查更新；Linux 版本在 设置 → 关�
 需要 Flutter 3.50 或更新的版本（Dart 3.14，用 Build Hooks 编译内置的 QuickJS）。
 
 ```sh
-git clone https://github.com/qier222/YesPlayMusic.git
+git clone https://github.com/workbydivyanshu/YesPlayMusic.git
 cd YesPlayMusic
 flutter pub get
 flutter run -d macos      # 或 windows / linux

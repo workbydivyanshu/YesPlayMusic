@@ -6,6 +6,7 @@
 
 macOS · Windows · Linux
 
+[![Website](https://img.shields.io/badge/Website-yesplaymusic--website.vercel.app-555555?style=flat-square&logo=vercel)](https://yesplaymusic-website.vercel.app)
 [![Release](https://img.shields.io/github/v/release/workbydivyanshu/YesPlayMusic?style=flat-square&color=D6B0FA)](https://github.com/workbydivyanshu/YesPlayMusic/releases/latest)
 [![Enhanced Edition](https://img.shields.io/badge/Edition-Enhanced%20v3.0.5-8A2BE2?style=flat-square)](https://github.com/workbydivyanshu/YesPlayMusic/releases/latest)
 [![CI](https://img.shields.io/github/actions/workflow/status/workbydivyanshu/YesPlayMusic/ci.yml?branch=main&style=flat-square&label=CI)](https://github.com/workbydivyanshu/YesPlayMusic/actions/workflows/ci.yml)
@@ -13,7 +14,7 @@ macOS · Windows · Linux
 
 English · [简体中文](README.zh.md)
 
-[Download](#download) · [Features](#features) · [Screenshots](#screenshots) · [Installing plugins](#installing-plugins) · [Writing plugins](#writing-plugins) · [AI assistants (MCP)](#ai-assistants-mcp) · [Building from source](#building-from-source)
+[Website](https://yesplaymusic-website.vercel.app) · [Download](#download) · [Features](#features) · [Screenshots](#screenshots) · [Installing plugins](#installing-plugins) · [Writing plugins](#writing-plugins) · [AI assistants (MCP)](#ai-assistants-mcp) · [Building from source](#building-from-source)
 
 </div>
 
