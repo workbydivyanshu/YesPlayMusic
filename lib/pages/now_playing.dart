@@ -26,27 +26,31 @@ class NowPlayingPage extends StatelessWidget {
     final app = context.app;
     final t = app.track;
     final mv = t.mv;
-    final noLyrics = !app.hasLyrics && !app.lyricsLoading && !mv;
+    final hasAnyLyrics = app.hasLyrics || app.plainLyrics.isNotEmpty;
 
     // 源给不出相似歌曲（比如本地音乐）时没有这个标签，停在播放队列
     var tab = app.npTab;
     if (tab == NpTab.similar && !app.canSimilar) tab = NpTab.queue;
     if (tab == NpTab.comments && !app.canComments) tab = NpTab.queue;
     if (mv && tab == NpTab.lyrics) tab = NpTab.queue;
-    final big = tab == NpTab.lyrics && noLyrics;
+    final big = tab == NpTab.lyrics && !hasAnyLyrics && !app.lyricsLoading && !mv;
 
     // 只切换下面的内容；上面的歌曲信息不参与切换，免得两份叠在一起闪
     final Widget body;
     if (big) {
-      body = app.plainLyrics.isNotEmpty
-          ? _PlainLyrics(key: ValueKey('plain-${t.key}'), text: app.plainLyrics)
-          : _BigInfo(key: ValueKey('big-${t.key}'), track: t);
+      body = _BigInfo(key: ValueKey('big-${t.key}'), track: t);
     } else if (tab == NpTab.lyrics) {
-      body = const Padding(
-        key: ValueKey('lyrics'),
-        padding: EdgeInsets.only(top: 232),
-        child: _Lyrics(),
-      );
+      body = app.hasLyrics
+          ? const Padding(
+              key: ValueKey('lyrics'),
+              padding: EdgeInsets.only(top: 232),
+              child: _Lyrics(),
+            )
+          : Padding(
+              key: ValueKey('plain-${t.key}'),
+              padding: const EdgeInsets.only(top: 232),
+              child: _PlainLyrics(text: app.plainLyrics),
+            );
     } else if (tab == NpTab.comments) {
       body = Padding(
         key: ValueKey('comments-${t.key}'),
@@ -543,11 +547,26 @@ class _TrackInfo extends StatelessWidget {
             hover: white,
             style: ts(13, w: w600, c: wa(0.65)),
           ),
-          if (app.lyricsSourceLabel.isNotEmpty) ...[
+          if (app.lyricsSourceLabel.isNotEmpty || app.plainLyrics.isNotEmpty) ...[
             const SizedBox(height: 8),
-            _SourceBadge(
-              label: app.lyricsSourceLabel,
-              onTap: () => _showLyricsControl(context),
+            Row(
+              children: [
+                _SourceBadge(
+                  label: app.hasLyrics
+                      ? app.lyricsSourceLabel
+                      : (app.lyricsSourceLabel.isEmpty
+                            ? context.l10n.lyricsPlainText
+                            : '${app.lyricsSourceLabel} (${context.l10n.lyricsPlainText})'),
+                  onTap: () => _showLyricsControl(context),
+                ),
+                if (!app.hasLyrics && app.plainLyrics.isNotEmpty) ...[
+                  const SizedBox(width: 8),
+                  _SourceBadge(
+                    label: '↻ ${context.l10n.lyricsTryAnotherSource}',
+                    onTap: () => app.retryLyricsNextSource(),
+                  ),
+                ],
+              ],
             ),
           ],
           const SizedBox(height: 22),
@@ -605,12 +624,16 @@ class _BigInfo extends StatelessWidget {
 
 /// 没有逐行时间戳时的纯文本歌词：居中、可读、可滚动。
 class _PlainLyrics extends StatelessWidget {
-  const _PlainLyrics({super.key, required this.text});
+  const _PlainLyrics({required this.text});
   final String text;
 
   @override
   Widget build(BuildContext context) {
-    final lines = text.split('\n').where((l) => l.trim().isNotEmpty).toList();
+    final l = context.l10n;
+    final lines = text
+        .split('\n')
+        .where((line) => line.trim().isNotEmpty)
+        .toList();
     return Center(
       child: SingleChildScrollView(
         padding: const EdgeInsets.symmetric(horizontal: 40, vertical: 60),
@@ -618,6 +641,11 @@ class _PlainLyrics extends StatelessWidget {
           mainAxisAlignment: MainAxisAlignment.center,
           crossAxisAlignment: CrossAxisAlignment.center,
           children: [
+            _SourceBadge(
+              label: '${l.lyricsPlainText} · ${l.lyricsTryAnotherSource} ↻',
+              onTap: () => _showLyricsControl(context),
+            ),
+            const SizedBox(height: 24),
             for (final line in lines)
               Padding(
                 padding: const EdgeInsets.symmetric(vertical: 6),
@@ -1281,7 +1309,7 @@ class _BottomBar extends StatelessWidget {
                 ctx,
                 // No room on the right: align the menu's right edge with the button's
                 box.localToGlobal(Offset(box.size.width + 2, -6)),
-                npMoreMenu(ctx),
+                npMoreMenu(ctx, onLyricsControl: () => _showLyricsControl(ctx)),
                 above: true,
               );
             },

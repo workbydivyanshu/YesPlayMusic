@@ -300,11 +300,16 @@ String formatSleepLeft(Duration d) {
 }
 
 /// The "more" menu at the bottom right of Now Playing. Other playback options go here too.
-MenuSpec npMoreMenu(BuildContext context) => MenuSpec(
-  groups: [
-    [sleepMenuItem(context)],
-  ],
-);
+MenuSpec npMoreMenu(BuildContext context, {VoidCallback? onLyricsControl}) =>
+    MenuSpec(
+      groups: [
+        [
+          if (onLyricsControl != null)
+            MenuItem('', context.l10n.lyricsControlTitle, onTap: onLyricsControl),
+          sleepMenuItem(context),
+        ],
+      ],
+    );
 
 /// Sleep timer (a submenu, no icons): common durations, custom, after this track;
 /// while it's on, the last group turns it off and shows the time left.

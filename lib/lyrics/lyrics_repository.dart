@@ -711,10 +711,12 @@ class LyricsRepository {
           continue;
         }
         if (e.id == 'apple_music') {
-          // Apple is top tier regardless of sync quality: finalize
-          // immediately, no lower-tier result can outrank it.
-          appleFinal = result;
-          return;
+          if (result.isWordSynced || result.isSynced) {
+            appleFinal = result;
+            return;
+          }
+          // Apple Music plain text must NOT abort the race; fall through so other
+          // providers' synced candidates take precedence.
         }
         bool displaces;
         final current = best;
